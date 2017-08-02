@@ -427,7 +427,7 @@ export class AliceExporter {
         let genome: number[] = new Array(13).fill(0);
 
         //Выбрать нужное количество "потенциально больных" систем организма
-        let badSystems = 5;
+        let badSystems = 6; //XY
         if (this.model.generation == "W") {
             badSystems = 2;
         } else if (this.model.generation == "Z") {

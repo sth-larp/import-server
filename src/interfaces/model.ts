@@ -42,6 +42,20 @@ export interface ISystem {
     lastModified: number,
 }
 
+export interface Professions {
+    isPilot: boolean;
+    isNavigator: boolean;
+    isCommunications: boolean;
+    isSupercargo: boolean;
+    isEngineer: boolean;
+    isBiologist: boolean;
+    isPlanetolog: boolean;
+    isJournalist: boolean;
+    isIdelogist: boolean;
+    isTopManager: boolean;
+    isSecurity: boolean;
+}
+
 export class DeusModel{
     _id: string;        //id в БД == JoinRPG ID
     _rev: string;       //rev в БД техническое  
@@ -58,6 +72,8 @@ export class DeusModel{
 
     sex?: string;            //пол
     systems: Array<ISystem>;
+
+    professions: Professions;
 
 //Техническое
     validateErrors?: string[];      //Ошибки валидации (если не пустое, в БД модель не пишутся)

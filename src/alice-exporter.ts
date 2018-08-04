@@ -11,7 +11,7 @@ import { ImportStats, ImportRunStats } from './stats';
 import { config } from './config';
 import { JoinCharacterDetail, JoinData, JoinFieldInfo, JoinFieldMetadata, JoinFieldValue, JoinGroupInfo, JoinMetadata } from './join-importer'
 
-import { DeusModel, MindData } from './interfaces/model';
+import { DeusModel, MindData, Professions } from './interfaces/model';
 import { DeusModifier } from './interfaces/modifier';
 import { DeusCondition } from './interfaces/condition';
 import { DeusEffect } from './interfaces/effect';
@@ -19,6 +19,7 @@ import { DeusEvent } from './interfaces/events';
 import { mindModelData } from './mind-model-stub';
 import { CatalogsLoader } from './catalogs-loader';
 import { saveObject } from './helpers'
+import { CharacterParser } from './character-parser';
 
 const PHYS_SYSTEMS_NUMBER = 6;
 
@@ -43,15 +44,16 @@ export class AliceExporter {
     private eventsCon: any = null;
 
 
-    private chance: Chance.SeededChance;
     public model: DeusModel = new DeusModel();
 
     private eventsToSend: DeusEvent[] = [];
 
     public account: IAliceAccount = { _id: "", password: "", login: "" };
 
+    private characterParsed: CharacterParser;
+
     constructor(private character: JoinCharacterDetail,
-        private metadata: JoinMetadata,
+        metadata: JoinMetadata,
         private catalogs: CatalogsLoader,
         public isUpdate: boolean = true,
         public ignoreInGame: boolean = false) {
@@ -69,7 +71,7 @@ export class AliceExporter {
         this.accCon = new PouchDB(`${config.url}${config.accountDBName}`, ajaxOpts);
         this.eventsCon = new PouchDB(`${config.url}${config.eventsDBName}`, ajaxOpts);
 
-        this.chance = new chance(character.CharacterId);
+        this.characterParsed = new CharacterParser(this.character, metadata);
 
         this.createModel();
     }
@@ -195,7 +197,7 @@ export class AliceExporter {
 
             //Login (e-mail). 
             //Защита от цифрового логина
-            this.model.login =  this.findStrFieldValue(3631);
+            this.model.login =  this.characterParsed.joinStrFieldValue(3631);
 
             if (this.model.login == "")
             {
@@ -218,7 +220,7 @@ export class AliceExporter {
             }
 
             //Password. 
-            this.account.password = this.findStrFieldValue(3630);
+            this.account.password = this.characterParsed.joinStrFieldValue(3630);
 
             if (this.account.password == "")
             {
@@ -228,7 +230,7 @@ export class AliceExporter {
             //Установить имя песрнажа. 
             this.setFullName(2786);
             
-            if (!this.findStrFieldValue(2787)) 
+            if (!this.characterParsed.joinStrFieldValue(2787)) 
             {
                 //Prevent to import
                 winston.info(`Character(${this.character.CharacterId}) hasn't been filled fully and skipped.`)
@@ -237,9 +239,11 @@ export class AliceExporter {
             }
 
             //Локация  
-            this.model.planet = this.findStrFieldValue(2787);
+            this.model.planet = this.characterParsed.joinStrFieldValue(2787);
 
             this.setGenome(2787);
+
+            this.model.professions = this.getProfessions();
 
             winston.info(`Character(${this.character.CharacterId}) was converted`, this.model, this.account);
 
@@ -247,94 +251,11 @@ export class AliceExporter {
             winston.info(`Error in converting model id=${this.character.CharacterId}: ` + e);
             this.model._id = "";
         }
-    }
-
-    public static joinStrFieldValue(character: JoinCharacterDetail,
-        fieldID: number): string {
-
-        const field = character.Fields.find(fi => fi.ProjectFieldId == fieldID);
-
-        if (!field) return "";
-
-        return field.DisplayString.trim();
-    }
-
-    public  joinFieldProgrammaticValue(fieldID: number): string {
-        const fieldValue = AliceExporter.joinNumFieldValue(this.character, fieldID);
-        const fieldMetadata = this.metadata.Fields.find(f => f.ProjectFieldId == fieldID);
-        
-        const variant = fieldMetadata.ValueList.find(f => f.ProjectFieldVariantId == fieldValue);
-
-        if (variant) {
-            return variant.ProgrammaticValue;
-        }
-        return null;
-    }
-
-    public static joinNumFieldValue(character: JoinCharacterDetail,
-        fieldID: number): number {
-
-        const field = character.Fields.find(fi => fi.ProjectFieldId == fieldID);
-
-        if (field) {
-            let value: number = Number.parseInt(field.Value);
-            if (!Number.isNaN(value)) {
-                return value;
-            }
-        }
-
-        return Number.NaN;
-    }
-
-    //Возвращается DisplayString поля, или ""
-    //Если convert==true, то тогда возращается выборка по Value из таблицы подставновки
-    findStrFieldValue(fieldID: number): string {
-        return AliceExporter.joinStrFieldValue(this.character, fieldID);
-    }
-
-    //Возвращается Value, которое должно быть цифровым или Number.NaN
-    findNumFieldValue(fieldID: number): number {
-        return AliceExporter.joinNumFieldValue(this.character, fieldID);
-    }
-
-    //Возвращается Value, которое должно булевым. 
-    //Если значение поля "on" => true, иначе false
-    findBoolFieldValue(fieldID: number): boolean {
-        let text = AliceExporter.joinStrFieldValue(this.character, fieldID);
-        return (text == 'on');
-    }
-
-    //Возвращается Value, которое должно быть списком цифр, разделенных запятыми
-    //Если в списке встретится что-то не цифровое, в массиве будет Number.NaN
-    findNumListFieldValue(fieldID: number): number[] {
-        const field = this.character.Fields.find(fi => fi.ProjectFieldId == fieldID);
-
-        if (field) {
-            return field.Value.split(',').map(el => Number.parseInt(el));
-        }
-
-        return [];
-    }
-
-    //Конвертирует числовое ID значения поля мультивыбора в Description для этого значения
-    //при конвертации убирает HTML-теги
-    convertToDescription(fieldID: number, variantID: number): string {
-        let field = this.metadata.Fields.find(f => f.ProjectFieldId == fieldID);
-
-        if (field && field.ValueList) {
-
-            let value = field.ValueList.find(fv => fv.ProjectFieldVariantId == variantID);
-            if (value && value.Description) {
-                return value.Description.replace(/\<(.*?)\>/ig, '')
-            }
-        }
-
-        return null;
-    }
+    } 
 
     //Создает значение поля Геном для модели. 
     setGenome(fieldID: number) {
-        const nucleotides = this.joinFieldProgrammaticValue(fieldID).split(" ", 7).map(sp => Number.parseInt(sp));
+        const nucleotides = this.characterParsed.joinFieldProgrammaticValue(fieldID).split(" ", 7).map(sp => Number.parseInt(sp));
 
         this.model.systems = [];
         nucleotides.forEach((element, index) => {
@@ -342,8 +263,26 @@ export class AliceExporter {
         });
     }
 
+    getProfessions() : Professions {
+        const groupOrField = (group, field) => this.characterParsed.hasFieldValue(3438, field) || this.characterParsed.partOfGroup(group);
+
+        return {
+            isBiologist: groupOrField(8489, 3448),
+            isCommunications: groupOrField(8486, 3445),
+            isEngineer: groupOrField(8488, 3447),
+            isIdelogist: groupOrField(8556, -1),
+            isJournalist: groupOrField(-1, 3450),
+            isNavigator: groupOrField(8446, 3444),
+            isPilot: groupOrField(8445, 3443),
+            isPlanetolog: groupOrField(8490, 3449),
+            isSecurity: groupOrField(9907, -1),
+            isSupercargo: groupOrField(8487, 3446),
+            isTopManager: groupOrField(9906, -1),
+        };
+    }
+
     setFullName(fullNameFieldNumber: number) {
-        const name = this.findStrFieldValue(fullNameFieldNumber);
+        const name = this.characterParsed.joinStrFieldValue(fullNameFieldNumber);
         let nameParts: INameParts = AliceExporter.parseFullName(name);
 
         this.model.firstName = nameParts.firstName;
@@ -351,7 +290,7 @@ export class AliceExporter {
         this.model.lastName = nameParts.lastName;
     }
 
-    //Установить имя песрнажа. Field: 496
+    //Установить имя песрнажа. 
     public static parseFullName(name: string): INameParts {
         let ret: INameParts = {
             firstName: "",

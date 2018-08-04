@@ -40,10 +40,10 @@ if (!params) {
      process.exit(0);
 }
 
-winston.info("Run CLI parameters: " + JSON.stringify(params));
-
 // start logging
 configureLogger();
+
+winston.info("Run CLI parameters: ", params);
 
 // Reenter flag
 let isImportRunning = false;
@@ -399,10 +399,13 @@ function importAndCreate(   id: number = 0,
 
 function configureLogger() {
     winston.add(winston.transports.File, {
-                filename: config.logFileName,
+                filename: config.log.logFileName,
                 json: false,
                 level: "debug",
             });
+    //const Elasticsearch = require('winston-elasticsearch');            
+
+    //winston.add( new (Elasticsearch)({ level: 'debug', clientOpts: { host: config.log } }));
 
     winston.handleExceptions(new winston.transports.File({
                  filename: "path/to/exceptions.log",

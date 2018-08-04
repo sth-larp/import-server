@@ -33,11 +33,11 @@ export class MailProvision {
         }
 
         let usersList: MailboxData[] = chars.map( c => { 
-                let nameParts = AliceExporter.parseFullName(AliceExporter.joinStrFieldValue(c, 496)); 
+                let nameParts = null; //AliceExporter.parseFullName(AliceExporter.joinStrFieldValue(c, 496)); 
                 return {
                     id : c._id,
-                    login: AliceExporter.joinStrFieldValue(c, 1905).split("@")[0],
-                    password: AliceExporter.joinStrFieldValue(c, 2039),
+                    login: null, //AliceExporter.joinStrFieldValue(c, 1905).split("@")[0],
+                    password: null, //AliceExporter.joinStrFieldValue(c, 2039),
                     fullName: nameParts.fullName,
                     firstName: nameParts.firstName,
                     lastName: nameParts.lastName

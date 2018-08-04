@@ -37,7 +37,7 @@ export interface JoinCharacterDetail{
     _id?: string,
     _rev?: string
     model?: DeusModel,
-    finalInGame?: boolean
+    finalInGame?: boolean,
 }
 
 export interface JoinFieldValue{

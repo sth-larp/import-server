@@ -10,7 +10,6 @@ import * as clones from 'clones';
 import { ImportStats, ImportRunStats } from './stats';
 import { config } from './config';
 import { JoinCharacterDetail, JoinData, JoinFieldInfo, JoinFieldMetadata, JoinFieldValue, JoinGroupInfo, JoinMetadata } from './join-importer'
-import { joinValues, insuranceSourceIT } from './join-import-tables';
 
 import { DeusModel, MindData } from './interfaces/model';
 import { DeusModifier } from './interfaces/modifier';
@@ -61,7 +60,9 @@ export class AliceExporter {
             auth: {
                 username: config.username,
                 password: config.password
-            }
+            },
+
+            timeout: 6000 * 1000,
         };
 
         this.con = new PouchDB(`${config.url}${config.modelDBName}`, ajaxOpts);
@@ -76,7 +77,8 @@ export class AliceExporter {
     export(): Promise<any> {
         
         if (!this.model._id) {
-            return Promise.reject(`AliceExporter.export(): ${this.character._id} Incorrect model ID or problem in conversion!`);
+            winston.warn(`AliceExporter.export(): ${this.character._id} Incorrect model ID or problem in conversion!`);
+            return Promise.resolve();
         }
 
         winston.info(`Will export converted Character(${this.model._id})`);
@@ -136,7 +138,15 @@ export class AliceExporter {
 //            .flatMap(() => this.eventsToSend.length ? this.eventsCon.bulkDocs(this.eventsToSend) : Observable.from([[]]))
 //            .do((result: any) => results.saveEvents = result.length)
 
-            .flatMap(() => (this.account.login && this.account.password) ? saveObject(this.accCon, this.account, this.isUpdate) : Promise.resolve(false))
+            .flatMap(() => {
+                if (this.account.login && this.account.password) {
+                    return saveObject(this.accCon, this.account, this.isUpdate) 
+                }
+                else {
+                    winston.warn(`Cannot provide account for Character(${this.model._id})`, this.account)
+                    return Promise.resolve(false);
+                }
+            })
             .do(result => results.account = result.ok ? "ok" : "error")
 
             .map(result => results)
@@ -183,9 +193,14 @@ export class AliceExporter {
             //Состояние "в игре"
             this.model.inGame = this.character.InGame;
 
-            //Login (e-mail). Field: 1905
+            //Login (e-mail). 
             //Защита от цифрового логина
-            this.model.login =  "t" + this.model._id; //this.findStrFieldValue(1905).split("@")[0].toLowerCase();
+            this.model.login =  this.findStrFieldValue(3631);
+
+            if (this.model.login == "")
+            {
+                this.model.login = "user" + this.model._id;
+            }
 
             if (!this.model.login.match(/^[\w\#\$\-\*\&\%\.]{4,30}$/i) || this.model.login.match(/^\d+$/i)) {
                 winston.warn(`ERROR: can't convert id=${this.character.CharacterId} incorrect login=\"${this.model.login}\"`);
@@ -205,13 +220,27 @@ export class AliceExporter {
             //Password. 
             this.account.password = this.findStrFieldValue(3630);
 
+            if (this.account.password == "")
+            {
+                this.account.password = "0000";
+            }
+
             //Установить имя песрнажа. 
             this.setFullName(2786);
+            
+            if (!this.findStrFieldValue(2787)) 
+            {
+                //Prevent to import
+                winston.info(`Character(${this.character.CharacterId}) hasn't been filled fully and skipped.`)
+                this.model._id = "";
+                return;
+            }
 
             //Локация  
             this.model.planet = this.findStrFieldValue(2787);
 
-            this.setGenome();
+            this.setGenome(2787);
+
             winston.info(`Character(${this.character.CharacterId}) was converted`, this.model, this.account);
 
         } catch (e) {
@@ -221,19 +250,27 @@ export class AliceExporter {
     }
 
     public static joinStrFieldValue(character: JoinCharacterDetail,
-        fieldID: number,
-        convert: boolean = false): string {
+        fieldID: number): string {
 
         const field = character.Fields.find(fi => fi.ProjectFieldId == fieldID);
 
         if (!field) return "";
 
-        if (!convert) {
-            return field.DisplayString.trim();
-        } else {
-            return joinValues.hasOwnProperty(field.Value) ? joinValues[field.Value] : "";
-        }
+        return field.DisplayString.trim();
     }
+
+    public  joinFieldProgrammaticValue(fieldID: number): string {
+        const fieldValue = AliceExporter.joinNumFieldValue(this.character, fieldID);
+        const fieldMetadata = this.metadata.Fields.find(f => f.ProjectFieldId == fieldID);
+        
+        const variant = fieldMetadata.ValueList.find(f => f.ProjectFieldVariantId == fieldValue);
+
+        if (variant) {
+            return variant.ProgrammaticValue;
+        }
+        return null;
+    }
+
     public static joinNumFieldValue(character: JoinCharacterDetail,
         fieldID: number): number {
 
@@ -251,8 +288,8 @@ export class AliceExporter {
 
     //Возвращается DisplayString поля, или ""
     //Если convert==true, то тогда возращается выборка по Value из таблицы подставновки
-    findStrFieldValue(fieldID: number, convert: boolean = false): string {
-        return AliceExporter.joinStrFieldValue(this.character, fieldID, convert);
+    findStrFieldValue(fieldID: number): string {
+        return AliceExporter.joinStrFieldValue(this.character, fieldID);
     }
 
     //Возвращается Value, которое должно быть цифровым или Number.NaN
@@ -263,7 +300,7 @@ export class AliceExporter {
     //Возвращается Value, которое должно булевым. 
     //Если значение поля "on" => true, иначе false
     findBoolFieldValue(fieldID: number): boolean {
-        let text = AliceExporter.joinStrFieldValue(this.character, fieldID, false);
+        let text = AliceExporter.joinStrFieldValue(this.character, fieldID);
         return (text == 'on');
     }
 
@@ -296,44 +333,13 @@ export class AliceExporter {
     }
 
     //Создает значение поля Геном для модели. 
-    setGenome() {
-        this.model.systems =  [
-            {
-              "value": 1,
-              "nucleotide": 0,
-              "lastModified": 0
-            },
-            {
-              "value": 1,
-              "nucleotide": 0,
-              "lastModified": 0
-            },
-            {
-              "value": -1,
-              "nucleotide": 0,
-              "lastModified": 0
-            },
-            {
-              "value": 1,
-              "nucleotide": 0,
-              "lastModified": 0
-            },
-            {
-              "value": 0,
-              "nucleotide": 0,
-              "lastModified": 0
-            },
-            {
-              "value": 1,
-              "nucleotide": 0,
-              "lastModified": 0
-            },
-            {
-              "value": 1,
-              "nucleotide": 0,
-              "lastModified": 0
-            }
-          ];
+    setGenome(fieldID: number) {
+        const nucleotides = this.joinFieldProgrammaticValue(fieldID).split(" ", 7).map(sp => Number.parseInt(sp));
+
+        this.model.systems = [];
+        nucleotides.forEach((element, index) => {
+            this.model.systems[index] = { value: 0, nucleotide: element, lastModified: 0};
+        });
     }
 
     setFullName(fullNameFieldNumber: number) {

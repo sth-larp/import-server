@@ -23,8 +23,14 @@ export class MailProvision {
     constructor() {
     }
 
+    //TODO accept here Accounts (already parsed) instead of JoinCharacterDetail
     //Послать запрос на создание e-mail'ов
     createEmails(chars: JoinCharacterDetail[]): Promise<any>{
+
+        if (!config.mailServerAPIUrl) {
+            winston.info("Mail server is not configured, so skipping email provisoining");
+            return Promise.resolve();
+        }
 
         let usersList: MailboxData[] = chars.map( c => { 
                 let nameParts = AliceExporter.parseFullName(AliceExporter.joinStrFieldValue(c, 496)); 
@@ -47,6 +53,5 @@ export class MailProvision {
         }
 
         return request(reqOpts);
-        //return Promise.resolve('{ "type": "moke" }');
     }
 }

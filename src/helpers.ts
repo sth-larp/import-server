@@ -29,10 +29,11 @@ export function saveObject( connection: any, doc: any, update:boolean = true ): 
             }
         })
         .catch( (err) => {
-            winston.warn(`catch object: `, err);
-
             if(err.status && err.status == 404){
                 return connection.put(doc)
+            }
+            else{
+                winston.warn(`catch object: `, err, doc);    
             }
         });
 

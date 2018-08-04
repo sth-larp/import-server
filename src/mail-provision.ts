@@ -5,7 +5,7 @@ import * as winston from 'winston';
 
 import { config } from './config';
 import { JoinCharacterDetail, JoinData, JoinFieldInfo, JoinFieldMetadata, JoinFieldValue, JoinGroupInfo, JoinMetadata } from './join-importer'
-import { DeusModel, MemoryElement, MindData } from './interfaces/model';
+import { DeusModel, MindData } from './interfaces/model';
 import { AliceExporter } from './alice-exporter';
 
 interface MailboxData {

@@ -14,7 +14,6 @@ import { CatalogsLoader } from './catalogs-loader';
 import { ModelRefresher } from './model-refresher';
 import { MailProvision } from './mail-provision';
 import { processCliParams } from './cli-params';
-import { EconomyProvision } from './econ-provioning';
 
 PouchDB.plugin(pouchDBFind);
 
@@ -24,7 +23,6 @@ class ModelImportData{
     catalogsLoader: CatalogsLoader = new CatalogsLoader();
     modelRefresher: ModelRefresher = new ModelRefresher();
     mailProvision: MailProvision = new MailProvision(); 
-    economyProvision: EconomyProvision = new EconomyProvision(); 
 
     currentStats = new ImportRunStats();
 
@@ -62,7 +60,7 @@ if(params.export || params.import || params.id || params.test || params.list || 
     let since = params.since? moment.utc(params.since, "YYYY-MM-DDTHH:mm") : null;
     
     importAndCreate(_id, (params.import == true), (params.export==true), (params.list==true), 
-                            false, (params.refresh==true), (params.mail==true), (params.econ==true), since, params.filter)
+                            false, (params.refresh==true), (params.mail==true), since)
     .subscribe( (data:string) => {},
                 (error:any) => {
                     process.exit(1);
@@ -160,6 +158,7 @@ function saveCharacterToCache(char: JoinCharacterDetail, data: ModelImportData):
  * Создание модели персонажа по данным из Join и экспорт в Model-базу
  */
 function exportCharacterModel(char: JoinCharacterDetail, data: ModelImportData, exportModel: boolean = true): Observable<JoinCharacterDetail> {
+
     let model = new AliceExporter(char, data.importer.metadata, data.catalogsLoader, true, params.ignoreInGame);
     char.model = model.model;
 
@@ -190,18 +189,6 @@ function sendModelRefresh(char: JoinCharacterDetail, data: ModelImportData): Obs
                     return char;
             });
 }
-
-/**
- * Регистрация аккаунта в экономике
- */
-function registerEconAccount(char: JoinCharacterDetail, data: ModelImportData): Observable<JoinCharacterDetail> {
-    return Observable.fromPromise(data.economyProvision.regiterAccount(char))
-            .map( (c:any) => { 
-                    winston.info( `Registered economy account for character id = ${char._id}: ` + JSON.stringify(c) );
-                    return char;
-            });
-}
-
         
 /**
  * Создание e-mail адресов и учеток для всех персонажей
@@ -209,7 +196,7 @@ function registerEconAccount(char: JoinCharacterDetail, data: ModelImportData): 
 function provisionMailAddreses(data: ModelImportData): Promise<any> {
     //winston.info(`provisionMailAddreses: ` + data.charDetails.map(c=>c._id).join(','));
     return data.mailProvision.createEmails(data.charDetails).then( c => {        
-        winston.info( `Reques for mail creation was sent for: ${data.charDetails.map(c=>c._id).join(',')}, result: ${JSON.stringify(c)}`);
+        winston.info( `Request for mail creation was sent for: ${data.charDetails.map(c=>c._id).join(',')}, result: ${JSON.stringify(c)}`);
         return c;
     });
 }
@@ -282,9 +269,7 @@ function importAndCreate(   id:number = 0,
                             updateStats:boolean = true,
                             refreshModel:boolean = false,
                             mailProvision:boolean = true,
-                            econProvision:boolean = true,
-                            updatedSince?: moment.Moment,
-                            filter? : string    
+                            updatedSince?: moment.Moment
                         ): Observable<string> {
 
     
@@ -292,7 +277,7 @@ function importAndCreate(   id:number = 0,
 
     winston.info(`Run import sequence with: id=${id}, import=${importJoin}, export=${exportModel}, ` +
                   `onlyList=${onlyList}, updateStats=${updateStats}, refresh=${refreshModel}, mailProvision=${mailProvision}, ` + 
-                   `econProvision=${econProvision}, updateSince=${sinceText}, filter=${filter}` )
+                   `updateSince=${sinceText}` )
 
 
     //Объект с рабочими данными при импорте - экспорте
@@ -336,27 +321,6 @@ function importAndCreate(   id:number = 0,
     //Загрузить данные из Join или из кеша
         .flatMap( (data:ModelImportData) => importJoin ? loadCharactersFromJoin(data) : loadCharactersFromCache(data) )
 
-     //Переданный фильтр
-        .filter( c => {
-            if(!filter){
-                return true;
-            }
-
-            let generation = AliceExporter.joinStrFieldValue(c, 498, true);
-            let isRobot =  generation == "robot";
-            let isProgramm = generation == "program";
-
-            if(filter == "robot" && isRobot){
-                winston.info(`Filter selection: robot   id=${c._id}`);
-                return true;
-            }else{
-                return false;
-            }
-        }) 
-
-    //Временно пропустить все дальше
-    //    .filter( c => false )
-    
     //Добавить задержку между обработкой записей
         .flatMap( c => Observable.from([c]).delay(config.importDelay), 1 )
 
@@ -365,10 +329,11 @@ function importAndCreate(   id:number = 0,
 
     //Остановить обработку, если в модели нет флага InGame (игра началась и дальше импортировать что-то левое не нужно)
         .filter( c => { 
-            if(!c.InGame){
-                winston.error(`Character id=${c._id} have no flag "InGame", and not imported`);
+            if(config.importOnlyInGame && !c.InGame){
+                winston.info(`Character id=${c._id} have no flag "InGame", and not imported`);
+                return false;
             }
-            return c.InGame;
+            return true;
          })
 
     //Экспортировать модель в БД (если надо)
@@ -383,9 +348,6 @@ function importAndCreate(   id:number = 0,
 
     //Послать модели Refresh соообщение для создания Work и View-моделей
         .flatMap( c => refreshModel ? sendModelRefresh(c, workData) : Observable.from([c]) )
-
-    //Отправить запрос на регистрацию аккаунта в экономике
-        .flatMap( c => econProvision ? registerEconAccount(c, workData)  : Observable.from([c]) )
 
     //Посчитать статистику
         .do( () => workData.importCouter++ )

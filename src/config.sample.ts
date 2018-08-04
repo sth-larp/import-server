@@ -10,6 +10,8 @@ export const config = {
     accountDBName: "accounts",
     eventsDBName: "events",
 
+    importOnlyInGame: false,
+
     joinGameId: "78",
     joinBaseUrl: "http://joinrpg.ru",
     joinTokenUrl: "http://joinrpg.ru/x-api/token",

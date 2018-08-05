@@ -131,14 +131,14 @@ export class AliceExporter {
 
             .map(([thisModel, oldModel]) => thisModel)
 
-//            .flatMap(() => this.clearEvents())
-//            .do(result => results.clearEvents = result.length)
+            .flatMap(() => this.clearEvents())
+            .do(result => results.clearEvents = result.length)
 
             .flatMap(() => saveObject(this.con, this.model, this.isUpdate))
             .do(result => results.model = result.ok ? "ok" : "error")
 
-//            .flatMap(() => this.eventsToSend.length ? this.eventsCon.bulkDocs(this.eventsToSend) : Observable.from([[]]))
-//            .do((result: any) => results.saveEvents = result.length)
+            .flatMap(() => this.eventsToSend.length ? this.eventsCon.bulkDocs(this.eventsToSend) : Observable.from([[]]))
+            .do((result: any) => results.saveEvents = result.length)
 
             .flatMap(() => {
                 if (this.account.login && this.account.password) {
@@ -162,8 +162,7 @@ export class AliceExporter {
     clearEvents(): Observable<any> {
         let selector = {
             selector: { characterId: this.model._id },
-            sort: [{ characterId: "desc" },
-            { timestamp: "desc" }],
+            //sort: [{ characterId: "desc" }, { timestamp: "desc" }],
             limit: 10000
         };
 

@@ -1,4 +1,4 @@
-import { Observable } from "rxjs/Rx";
+import { Observable } from "rxjs";
 import * as moment from "moment";
 import * as PouchDB from "pouchdb";
 import * as request from "request-promise-native";

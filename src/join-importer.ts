@@ -3,7 +3,7 @@ import * as request from "request-promise-native";
 import * as winston from "winston";
 
 import { config } from "./config";
-import { DeusModel } from "./interfaces/deus-model";
+import { MagellanModel } from "./magellan2018/models/MagellanModel";
 import { AliceAccount } from "./interfaces/alice-account";
 
 export interface JoinCharacter {
@@ -37,7 +37,7 @@ export interface JoinCharacterDetail {
     PlayerUserId: string;
     _id?: string;
     _rev?: string;
-    model?: DeusModel;
+    model?: MagellanModel;
     account?: AliceAccount;
     finalInGame?: boolean;
 }

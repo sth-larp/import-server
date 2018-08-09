@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs/Rx';
+import { Observable } from 'rxjs';
 import * as PouchDB from 'pouchdb';
 import * as winston from 'winston';
 import * as clones from 'clones';

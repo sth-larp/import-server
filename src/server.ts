@@ -1,5 +1,5 @@
 import * as express from "express";
-import { Observable, BehaviorSubject  } from "rxjs/Rx";
+import { Observable, BehaviorSubject  } from "rxjs";
 import * as moment from "moment";
 import * as winston from "winston";
 import Elasticsearch = require("winston-elasticsearch");

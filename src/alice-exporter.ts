@@ -1,4 +1,4 @@
-import { Observable } from "rxjs/Rx";
+import { Observable } from "rxjs";
 import * as PouchDB from "pouchdb";
 import * as winston from "winston";
 import * as clones from "clones";
@@ -11,7 +11,7 @@ import { DeusEvent } from "./interfaces/events";
 import { saveObject } from "./helpers";
 import { CharacterParser } from "./character-parser";
 import { AliceAccount } from "./interfaces/alice-account";
-import { DeusModel } from "./interfaces/deus-model";
+import { MagellanModel } from "./magellan2018/models/MagellanModel";
 import { convertAliceModel } from "./alice-model-converter";
 
 export interface INameParts {
@@ -23,7 +23,7 @@ export interface INameParts {
 
 export class AliceExporter {
 
-    public model: DeusModel = new DeusModel();
+    public model: MagellanModel;
     public account?: AliceAccount;
 
     public conversionProblems: string[] = [];
@@ -104,7 +104,7 @@ export class AliceExporter {
 
         return Observable.zip(thisModel, oldModel, (a, b) => [a, b])
             // ===== Проверка InGame для для случая обновления ==============================
-            .filter(([, o]: [DeusModel, DeusModel | null]) => {
+            .filter(([, o]: [MagellanModel, MagellanModel | null]) => {
                 if (o && o.inGame) {
                     winston.info(`Character model ${this.model._id} already in game!`);
                     return false;

@@ -1,5 +1,5 @@
 import { CharacterParser } from "./character-parser";
-import { DeusModel } from "./interfaces/deus-model";
+import { MagellanModel } from "./magellan2018/models/MagellanModel";
 import { AliceAccount } from "./interfaces/alice-account";
 
 import * as winston from "winston";
@@ -8,7 +8,7 @@ import { Professions, TradeUnions, Company } from "./interfaces/model";
 
 export interface ConversionResults {
     problems: string[];
-    model: DeusModel;
+    model: MagellanModel;
     account: AliceAccount;
 }
 
@@ -50,7 +50,7 @@ class AliceModelConverter {
         }
         winston.info(`Try to convert model id=${this.character.characterId}`);
 
-        const model = {
+        const model: MagellanModel = {
             ...this.getEmptyModel(),
             timestamp: Date.now(),
             _id: this.character.characterId.toString(),
@@ -61,6 +61,7 @@ class AliceModelConverter {
             spaceSuit: this.getSpaceSuit(),
             ...this.getPlanetAndGenome(2787),
             profileType: "human",
+            isTopManager: this.getCompanyAccess().some((company) => company.isTopManager),
         };
 
         const account : AliceAccount = {

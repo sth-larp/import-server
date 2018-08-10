@@ -24,6 +24,10 @@ export interface AliceBaseModel {
     isAlive: boolean;  // Если false = персонаж мертв
     inGame: boolean; // Если true - персонаж в игре, и обновлять при импорте эту модель нельзя
 
+    firstName: string; // имя
+    nicName?: string; // ник-нейм
+    lastName?: string; // фамилия
+
     // Техническое
     timestamp: number;          // дата обновление модели
     conditions: DeusCondition[];     // состояния

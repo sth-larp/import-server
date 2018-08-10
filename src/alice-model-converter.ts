@@ -1,10 +1,10 @@
 import { CharacterParser } from "./character-parser";
-import { MagellanModel } from "./magellan2018/models/MagellanModel";
+import { MagellanModel, HumanModel } from "./magellan2018/models/magellan-models";
 import { AliceAccount } from "./interfaces/alice-account";
 
 import * as winston from "winston";
 import { INameParts } from "./alice-exporter";
-import { Professions, TradeUnions, Company } from "./interfaces/model";
+import { AliceBaseModel } from "./interfaces/deus-model";
 
 export interface ConversionResults {
     problems: string[];
@@ -12,15 +12,22 @@ export interface ConversionResults {
     account: AliceAccount;
 }
 
-export function convertAliceModel (character: CharacterParser): ConversionResults {
-    const converter = new AliceModelConverter(character);
-    return converter.convert();
+export function createEmptyAliceModel() {
+    return {
+        conditions: [],
+        changes: [],
+        messages: [],
+        modifiers: [],
+        timers: [],
+        _rev: undefined,
+        timestamp: Date.now(),
+    };
 }
 
-class AliceModelConverter {
+export abstract class AliceModelConverter {
     public conversionProblems: string[] = [];
     constructor(
-        private character: CharacterParser,
+        protected character: CharacterParser,
     ) {
 
     }
@@ -50,94 +57,27 @@ class AliceModelConverter {
         }
         winston.info(`Try to convert model id=${this.character.characterId}`);
 
-        const model: MagellanModel = {
-            ...this.getEmptyModel(),
-            timestamp: Date.now(),
-            _id: this.character.characterId.toString(),
-            isAlive: true,
-            inGame: this.character.inGame,
-            login: this.getLogin(),
-            ...this.getFullName(2786),
-            spaceSuit: this.getSpaceSuit(),
-            ...this.getPlanetAndGenome(2787),
-            profileType: "human",
-            isTopManager: this.getCompanyAccess().some((company) => company.isTopManager),
-        };
+        const base: AliceBaseModel = this.createBaseModel();
 
-        const account : AliceAccount = {
-            _id: model._id,
-            login: model.login,
-            password: this.character.joinStrFieldValue(3630) || "0000",
-            professions: this.getProfessions(),
-            companyAccess: this.getCompanyAccess(),
-            jobs: {
-                tradeUnion: this.getTradeUnionMembership(),
-                companyBonus: this.getCompanies(),
-            }
-        };
+        const { model, account }: { model: HumanModel; account: AliceAccount; } = this.convertSpecifics(base);
 
         return {model, account};
     }
 
-    private getEmptyModel() {
+    protected abstract convertSpecifics(base: AliceBaseModel); 
+
+    private createBaseModel(): AliceBaseModel {
         return {
-            conditions: [],
-            changes: [],
-            messages: [],
-            modifiers: [],
-            timers: [],
-            _rev: undefined,
+            ...createEmptyAliceModel(),
+            _id: this.character.characterId.toString(),
+            login: this.getLogin(),
+            isAlive: true,
+            inGame: this.character.inGame,
+            ...this.getFullName(this.getNameFieldId()),
         };
     }
 
-    private getCompanies() {
-        const companies : Company[] = [];
-
-        const checkAccess  = (g, companyName) => {
-            if (this.character.partOfGroup(g))
-            {
-                companies.push(companyName);
-            }    
-        }
-
-        checkAccess(8492, "gd");
-        checkAccess(8495, "pre");
-        checkAccess(8497, "kkg");
-        checkAccess(8498, "mat");
-        checkAccess(8499, "mst");
-
-        return companies;
-
-    }
-
-    private getCompanyAccess() {
-        return this.getCompanies().map(
-            company => {
-                return {companyName: company, isTopManager: this.character.partOfGroup(9906)};
-            }
-        )
-    }
-
-    private getPlanetAndGenome(planetFieldId: number) {
-        // Локация
-        if (!this.character.joinStrFieldValue(planetFieldId)) {
-            this.conversionProblems.push(`Missing required field homeworld (${planetFieldId})`);
-        }
-        else {
-            const planet = this.character.joinStrFieldValue(planetFieldId);
-            const nucleotides = 
-            this.character.joinFieldProgrammaticValue(planetFieldId)
-            .split(" ", 7)
-            .map((sp) => Number.parseInt(sp, 10));
-
-            const systems = [];
-            nucleotides.forEach((element, index) => {
-                systems[index] = { value: 0, nucleotide: element, lastModified: 0, present: true};
-            });
-
-        return {planet, systems};
-        }
-    }
+    protected abstract getNameFieldId(): number;
 
     private getLogin() {
         // Защита от цифрового логина
@@ -148,46 +88,6 @@ class AliceModelConverter {
         }
 
         return login;
-    }
-
-    private getSpaceSuit() {
-        return {
-            on: false,
-            oxygenCapacity: 0,
-            timestampWhenPutOn: 0,
-            diseases: [],
-        };
-    }
-
-    private getTradeUnionMembership(): TradeUnions {
-        const field = (f) => this.character.hasFieldValue(3438, f);
-
-        const group = (g) => this.character.partOfGroup(g);
-
-        return {
-            isBiologist: group(8489) || field(3448),
-            isCommunications: group(8486) || field(3445),
-            isEngineer: group(8488) || field(3447),
-            isNavigator: group(8446) || field(3444),
-            isPilot: group(8445) || field(3443),
-            isPlanetolog: group(3449) || field(3449),
-            isSupercargo: group(8487) || field(3446),
-        };
-    }
-
-    private getProfessions(): Professions {
-        const field = (f) => this.character.hasFieldValue(3438, f);
-
-        const group = (g) => this.character.partOfGroup(g);
-
-        return {
-            ...this.getTradeUnionMembership(),
-            isIdelogist: group(8556),
-            isJournalist: field(3450),
-            isSecurity: group(9907),
-            isTopManager: group(9906),
-            isManager: group(8491),
-        };
     }
 
     private getFullName(fullNameFieldNumber: number) {

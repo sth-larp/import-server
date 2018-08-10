@@ -11,8 +11,9 @@ import { DeusEvent } from "./interfaces/events";
 import { saveObject } from "./helpers";
 import { CharacterParser } from "./character-parser";
 import { AliceAccount } from "./interfaces/alice-account";
-import { MagellanModel } from "./magellan2018/models/MagellanModel";
-import { convertAliceModel } from "./alice-model-converter";
+import { MagellanModel } from "./magellan2018/models/magellan-models";
+import { GameFacade } from "./interfaces/game";
+import { AliceBaseModel } from "./interfaces/deus-model";
 
 export interface INameParts {
     firstName: string;
@@ -21,7 +22,7 @@ export interface INameParts {
     fullName: string;
 }
 
-export class AliceExporter {
+export class AliceExporter<Model extends AliceBaseModel> {
 
     public model: MagellanModel;
     public account?: AliceAccount;
@@ -36,7 +37,9 @@ export class AliceExporter {
 
     private character: CharacterParser;
 
-    constructor(character: JoinCharacterDetail,
+    constructor(
+                private gameFacade: GameFacade<Model>,
+                character: JoinCharacterDetail,
                 metadata: JoinMetadata,
                 public isUpdate: boolean = true,
                 public ignoreInGame: boolean = false) {
@@ -162,7 +165,7 @@ export class AliceExporter {
     }
 
     private createModel() {
-        const result = convertAliceModel(this.character);
+        const result = this.gameFacade.convertAliceModel(this.character);
         this.model = result.model;
         this.account = result.account;
         this.conversionProblems = result.problems;

@@ -36,8 +36,6 @@ export class EconProvider {
                 json: true,
             };
 
-            winston.debug("", reqOpts);
-
             await request(reqOpts);
         }
         catch (e)

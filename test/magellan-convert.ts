@@ -3,13 +3,15 @@ import { expect } from 'chai';
 import { testCharData01 } from './test-char1';
 import { testCharData02 } from './test-char2';
 import { metadata } from './test-metadata';
-import { convertAliceModel } from '../src/alice-model-converter';
 import { CharacterParser } from '../src/character-parser';
+import { MagellanGame } from '../src/magellan2018/index';
+
+const magellan = new MagellanGame();
 
 describe("Model Creation testchar01", () => {
 
     const character = new CharacterParser(testCharData01, metadata);
-    const {model, account, problems} = convertAliceModel(character);
+    const {model, account, problems} = magellan.convertAliceModel(character);
 
     it("no conversion error", () => {
         expect(problems, `Has conversion problems: ${problems.join(", ")}`).to.be.empty;
@@ -44,7 +46,7 @@ describe("Model Creation testchar01", () => {
 describe("Model Creation testchar02", () => {
 
     const character = new CharacterParser(testCharData02, metadata);
-    const {model, account, problems} = convertAliceModel(character);
+    const {model, account, problems} = magellan.convertAliceModel(character);
 
     it("no conversion error", () => {
         expect(problems, `Has conversion problems: ${problems.join(", ")}`).to.be.empty;

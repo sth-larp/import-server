@@ -1,6 +1,6 @@
 import { Observable } from "rxjs";
-import { MagellanModel } from "../magellan2018/models/MagellanModel";
+import { AliceBaseModel } from "./deus-model";
 
-export interface NpcCreator {
-    generate(firstId: number, count: number): Observable<MagellanModel>;
+export interface NpcCreator<T extends AliceBaseModel> {
+    generate(firstId: number, count: number): Observable<T>;
 }

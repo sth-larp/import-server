@@ -3,7 +3,7 @@ import * as request from "request-promise-native";
 import * as winston from "winston";
 
 import { config } from "./config";
-import { MagellanModel } from "./magellan2018/models/MagellanModel";
+import { MagellanModel } from "./magellan2018/models/magellan-models";
 import { AliceAccount } from "./interfaces/alice-account";
 
 export interface JoinCharacter {

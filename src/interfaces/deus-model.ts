@@ -36,4 +36,3 @@ export interface AliceBaseModel {
     changes: ChangesElement[];  // Изменения в модели
     messages: Message[];   // Сообщения игроку
 }
-

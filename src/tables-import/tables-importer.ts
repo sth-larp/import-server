@@ -21,6 +21,7 @@ import { FirmwareData, parseFirmware } from './firmwareData';
 
 import * as loaders from './loaders';
 import { System } from "../interfaces/model";
+import { createEmptyAliceModel } from '../alice-model-converter';
 
 let unique = arrayUnique.immutable;
 
@@ -147,17 +148,12 @@ export class TablesImporter {
                         systems.push({lastModified: 0, present: systemsMask[s] == 1, value: systemsValues[s], nucleotide: nucleotide[s]});
 
                     const model = {
+                        ...createEmptyAliceModel(),
                         _id: id,
-                        timestamp: Date.now(),
                         firstName: 'Инопланетный',
                         lastName: 'организм',
                         profileType: 'xenomorph',
                         systems,
-                        conditions: [],
-                        changes: [],
-                        messages: [],
-                        modifiers: [],
-                        timers: [],
                     }
 
                     try {

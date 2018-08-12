@@ -13,6 +13,9 @@ import { MagellanGame } from "./magellan2018";
 import { MagellanModel } from "./magellan2018/models/magellan-models";
 import { Server } from "./server-class";
 
+// start logging
+configureLogger();
+
 PouchDB.plugin(pouchDBFind);
 
 const params = processCliParams();
@@ -21,9 +24,6 @@ if (!params) {
      process.exit(0);
 }
 
-// start logging
-configureLogger();
-
 winston.info("Run CLI parameters: ", params);
 
 // Statisticts
@@ -31,24 +31,37 @@ const stats = new ImportStats();
 
 const server = new Server<MagellanModel>(new MagellanGame(), params);
 
+if (params.provideNpcs) {
+    server.createNpcs()
+    .subscribe( (data: string) => { },
+    (error: any) => {
+        winston.error(`Error`, error);
+        process.exit(1);
+    },
+    () => {
+        winston.info("Finished!");
+        process.exit(0);
+    },
+);
+}
+
 if (
     params.export
     || params.import
     || params.id
-    || params.test
     || params.list
     || params.refresh
-    || params.mail
     || params.econ) {
     // tslint:disable-next-line:variable-name
     const _id = params.id ? params.id : 0;
-    const since = params.since ? moment.utc(params.since, "YYYY-MM-DDTHH:mm") : null;
+    const since = params.since ? moment(...params.since, "YYYY-MM-DDTHH:mm") : null;
 
     server.importAndCreate(_id, (params.import === true), (params.export === true), (params.list === true),
                             false, (params.refresh === true), (params.mail === true), since)
     // tslint:disable-next-line:no-empty
     .subscribe( (data: string) => { },
                 (error: any) => {
+                    winston.error(`Error`, error);
                     process.exit(1);
                 },
                 () => {

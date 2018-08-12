@@ -48,4 +48,6 @@ export const config = {
     },
 
     mailServerAPIUrl: "",
+
+    initialNpcId : 10000,
 };

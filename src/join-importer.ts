@@ -3,8 +3,7 @@ import * as request from "request-promise-native";
 import * as winston from "winston";
 
 import { config } from "./config";
-import { MagellanModel } from "./magellan2018/models/magellan-models";
-import { AliceAccount } from "./interfaces/alice-account";
+import { AliceBaseModel } from "./interfaces/deus-model";
 
 export interface JoinCharacter {
     CharacterId: number;
@@ -25,7 +24,7 @@ export interface JoinFieldInfo {
     DisplayString: string;
 }
 
-export interface JoinCharacterDetail {
+export interface JoinCharacterInfo {
     CharacterId: number;
     UpdatedAt: string;
     IsActive: boolean;
@@ -37,9 +36,6 @@ export interface JoinCharacterDetail {
     PlayerUserId: string;
     _id?: string;
     _rev?: string;
-    model?: MagellanModel;
-    account?: AliceAccount;
-    finalInGame?: boolean;
 }
 
 export interface JoinFieldValue {
@@ -66,8 +62,8 @@ export interface JoinMetadata {
     _rev?: string;
 }
 
-export interface JoinData {
-    characters: JoinCharacterDetail[];
+export interface JoinDataInfo<Model extends AliceBaseModel> {
+    characters: JoinCharacterInfo[];
     metadata: JoinMetadata;
 }
 
@@ -123,7 +119,7 @@ export class JoinImporter {
         return request(reqOpts);
     }
 
-    public getCharacter(CharacterLink: string): Promise<JoinCharacterDetail> {
+    public getCharacter(CharacterLink: string): Promise<JoinCharacterInfo> {
         const reqOpts = {
             url: config.joinrpg.baseUrl + CharacterLink,
             method : "GET",
@@ -137,7 +133,7 @@ export class JoinImporter {
         return request(reqOpts);
     }
 
-    public getCharacterByID(id: string): Promise<JoinCharacterDetail> {
+    public getCharacterByID(id: string): Promise<JoinCharacterInfo> {
         const url = `${config.joinrpg.charactersPath}/${id}/`;
         return this.getCharacter(url);
     }

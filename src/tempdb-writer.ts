@@ -1,14 +1,10 @@
-import { Observable } from "rxjs";
 import * as moment from "moment";
 import * as PouchDB from "pouchdb";
-import * as request from "request-promise-native";
 import * as winston from "winston";
 
 
-import { ImportStats } from "./stats";
 import { config } from "./config";
-import { JoinCharacterDetail, JoinData, JoinFieldInfo, JoinFieldMetadata, JoinFieldValue,
-         JoinGroupInfo, JoinMetadata, JoinImporter, JoinCharacter } from "./join-importer"
+import { JoinCharacterInfo,  JoinMetadata, JoinImporter, JoinCharacter } from "./join-importer"
 import { ImportRunStats } from "./import-run-stats";
 
 export class TempDbWriter {
@@ -28,7 +24,7 @@ export class TempDbWriter {
         this.con = new PouchDB(`${config.url}${config.tempDbName}`, ajaxOpts);
     }
     
-    setFieldsNames(c: JoinCharacterDetail, metadata: JoinMetadata): JoinCharacterDetail{
+    setFieldsNames(c: JoinCharacterInfo, metadata: JoinMetadata): JoinCharacterInfo{
         c.Fields.forEach( (f) => {
             let fmeta = metadata.Fields.find( v => v.ProjectFieldId == f.ProjectFieldId );
             f.FieldName = fmeta ? fmeta.FieldName : "";
@@ -37,11 +33,11 @@ export class TempDbWriter {
         return c;
     }
 
-    saveCharacter( c: JoinCharacterDetail ): Promise<any>{
+    saveCharacter( c: JoinCharacterInfo ): Promise<any>{
         c._id = c.CharacterId.toString();
         
         return this.con.get(c._id)
-                        .then( (oldc: JoinCharacterDetail) =>{ 
+                        .then( (oldc: JoinCharacterInfo) =>{ 
                             c._rev = oldc._rev;
                             return this.con.put(c);
                         })
@@ -61,7 +57,7 @@ export class TempDbWriter {
         };
 
         return this.con.get(this.lastStatsDocID)
-                        .then( (oldc: JoinCharacterDetail) =>{ 
+                        .then( (oldc: JoinCharacterInfo) =>{ 
                             stats._rev = oldc._rev;
                             return this.con.put(stats);
                         })
@@ -111,7 +107,7 @@ export class TempDbWriter {
         })
     }
 
-    getCacheCharacter(id: string): Promise<JoinCharacterDetail>{
+    getCacheCharacter(id: string): Promise<JoinCharacterInfo>{
         return this.con.get(id);
     }
 }

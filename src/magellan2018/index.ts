@@ -9,16 +9,16 @@ import { MiceCreator } from "./mice-creator";
 
 export class MagellanGame  {
    
-    public convertAliceModel (character: CharacterParser): ConversionResults {
+    public convertAliceModel (character: CharacterParser): ConversionResults<MagellanModel> {
         const converter = new MagellanModelConverter(character);
         return converter.convert();
     }
 
-    public getAfterConversionProviders() : Provider[] {
+    public getAfterConversionProviders() : Provider<MagellanModel>[] {
         return [new EconProvider()];
     }
 
     public getNpcProviders() : NpcCreator<MagellanModel>[] {
-        return [new MiceCreator()];
+        return [new MiceCreator(1000)];
     }
 }

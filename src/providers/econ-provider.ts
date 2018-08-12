@@ -1,21 +1,23 @@
-import { JoinCharacterDetail } from "../join-importer";
-import { ProvideResult, ProvideSuccess } from "./interface";
+import { ProvideResult } from "./interface";
 import * as   request from "request-promise-native";
 import { config } from "../config";
 import * as winston from "winston";
+import { AliceBaseModel } from "../interfaces/deus-model";
+import { AliceAccount } from "../interfaces/alice-account";
+import { JoinCharacterInfo } from "../join-importer";
 
 export class EconProvider {
     public name: string = "economic account";
 
-    public async provide(character: JoinCharacterDetail) : Promise<ProvideResult>
+    public async provide(character: JoinCharacterInfo, model: AliceBaseModel, account: AliceAccount) : Promise<ProvideResult>
     {
         const body = {
-            userId: character.account.login,
-            initialBalance: 777,
+            userId: account.login,
+            initialBalance: 1,
         };
 
         try {
-            const result = await this.callEconomicServer("/economy/provision", body);
+            await this.callEconomicServer("/economy/provision", body);
         }
         catch (e)
         {

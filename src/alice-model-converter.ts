@@ -1,14 +1,12 @@
 import { CharacterParser } from "./character-parser";
-import { MagellanModel, HumanModel } from "./magellan2018/models/magellan-models";
 import { AliceAccount } from "./interfaces/alice-account";
 
 import * as winston from "winston";
-import { INameParts } from "./alice-exporter";
 import { AliceBaseModel } from "./interfaces/deus-model";
 
-export interface ConversionResults {
+export interface ConversionResults<Model extends AliceBaseModel> {
     problems: string[];
-    model: MagellanModel;
+    model: Model;
     account: AliceAccount;
 }
 
@@ -24,7 +22,7 @@ export function createEmptyAliceModel() {
     };
 }
 
-export abstract class AliceModelConverter {
+export abstract class AliceModelConverter<Model extends AliceBaseModel> {
     public conversionProblems: string[] = [];
     constructor(
         protected character: CharacterParser,
@@ -32,7 +30,7 @@ export abstract class AliceModelConverter {
 
     }
 
-    public convert() : ConversionResults {
+    public convert() : ConversionResults<Model> {
         try {
             const result = this.convertModelImpl();
             return {
@@ -59,7 +57,7 @@ export abstract class AliceModelConverter {
 
         const base: AliceBaseModel = this.createBaseModel();
 
-        const { model, account }: { model: HumanModel; account: AliceAccount; } = this.convertSpecifics(base);
+        const { model, account }: { model: Model; account: AliceAccount; } = this.convertSpecifics(base);
 
         return {model, account};
     }
@@ -101,8 +99,8 @@ export abstract class AliceModelConverter {
     }
 
     // Установить имя песрнажа.
-    private parseFullName(name: string): INameParts {
-        const ret: INameParts = {
+    private parseFullName(name: string) {
+        const ret = {
             firstName: "",
             nicName: "",
             lastName: "",

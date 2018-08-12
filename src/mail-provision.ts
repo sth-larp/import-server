@@ -2,7 +2,6 @@ import * as request from 'request-promise-native';
 import * as winston from 'winston';
 
 import { config } from './config';
-import { JoinCharacterDetail, JoinData, JoinFieldInfo, JoinFieldMetadata, JoinFieldValue, JoinGroupInfo, JoinMetadata } from './join-importer'
 
 interface MailboxData {
     id: string,
@@ -21,7 +20,7 @@ export class MailProvision {
 
     //TODO accept here Accounts (already parsed) instead of JoinCharacterDetail
     //Послать запрос на создание e-mail'ов
-    createEmails(chars: JoinCharacterDetail[]): Promise<any>{
+    createEmails(chars: any[]): Promise<any>{
 
         if (!config.mailServerAPIUrl) {
             winston.info("Mail server is not configured, so skipping email provisoining");

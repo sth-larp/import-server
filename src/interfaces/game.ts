@@ -5,7 +5,7 @@ import { NpcCreator } from "./npc-creator";
 import { AliceBaseModel } from "./deus-model";
 
 export interface GameFacade <ModelAccount extends AliceBaseModel> {
-    convertAliceModel (character: CharacterParser): ConversionResults;
-    getAfterConversionProviders(): Provider[];
+    convertAliceModel (character: CharacterParser): ConversionResults<ModelAccount>;
+    getAfterConversionProviders(): Provider<ModelAccount>[];
     getNpcProviders(): NpcCreator<ModelAccount>[];
 }

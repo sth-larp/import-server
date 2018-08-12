@@ -2,6 +2,20 @@ import * as commandLineArgs from "command-line-args";
 import * as commandLineUsage from "command-line-usage";
 import winston from "winston";
 
+export interface CliParams {
+    export: boolean;
+    import: boolean;
+    list: boolean;
+    refresh: boolean;
+    econ: boolean;
+    id?: number;
+    since?: String;
+    server: boolean;
+    ignoreInGame: boolean;
+    provideNpcs: boolean;
+    mail: boolean;
+}
+
 // Сheck CLI arguments
 const cliParamsDef = [
         { name: "export", type: Boolean, description: "Create and export model to ALICE DB" },
@@ -21,6 +35,7 @@ const cliParamsDef = [
         },
         { name: "server", type: Boolean, description: "Run as a server" },
         { name: "ignoreInGame", type: Boolean, description: "Ignore inGame flag for re-export" },
+        { name: "provideNpcs", type: Boolean, description: "Create required NPC" },
 ];
 
 const usageSections = [
@@ -37,11 +52,11 @@ const usageSections = [
     },
 ];
 
-export function processCliParams(): any {
+export function processCliParams(): CliParams {
     try {
         const p = commandLineArgs(cliParamsDef);
 
-        const setSteps = p.export || p.import || p.list || p.refresh || p.mail || p.since || p.econ;
+        const setSteps = p.export || p.import || p.list || p.refresh || p.mail || p.since || p.econ || p.provideNpcs;
 
         if (!setSteps && !p.server && !p.id) {
             throw "error combinations";

@@ -4,43 +4,22 @@ import * as winston from "winston";
 import * as clones from "clones";
 
 import { config } from "./config";
-import { JoinCharacterDetail } from "./join-importer";
-import { JoinMetadata } from "./join-importer";
 
 import { DeusEvent } from "./interfaces/events";
 import { saveObject } from "./helpers";
-import { CharacterParser } from "./character-parser";
-import { AliceAccount } from "./interfaces/alice-account";
-import { MagellanModel } from "./magellan2018/models/magellan-models";
-import { GameFacade } from "./interfaces/game";
 import { AliceBaseModel } from "./interfaces/deus-model";
-
-export interface INameParts {
-    firstName: string;
-    nicName: string;
-    lastName: string;
-    fullName: string;
-}
+import { AliceAccount } from "./interfaces/alice-account";
 
 export class AliceExporter<Model extends AliceBaseModel> {
-
-    public model: MagellanModel;
-    public account?: AliceAccount;
-
-    public conversionProblems: string[] = [];
-
     private con: any = null;
     private accCon: any = null;
     private eventsCon: any = null;
 
     private eventsToSend: DeusEvent[] = [];
 
-    private character: CharacterParser;
-
     constructor(
-                private gameFacade: GameFacade<Model>,
-                character: JoinCharacterDetail,
-                metadata: JoinMetadata,
+                private model: Model,
+                private account: AliceAccount,
                 public isUpdate: boolean = true,
                 public ignoreInGame: boolean = false) {
 
@@ -56,20 +35,29 @@ export class AliceExporter<Model extends AliceBaseModel> {
         this.con = new PouchDB(`${config.url}${config.modelDBName}`, ajaxOpts);
         this.accCon = new PouchDB(`${config.url}${config.accountDBName}`, ajaxOpts);
         this.eventsCon = new PouchDB(`${config.url}${config.eventsDBName}`, ajaxOpts);
-
-        this.character = new CharacterParser(character, metadata);
-
-        this.createModel();
     }
 
-    public export(): Promise<any> {
-
-        if (!this.model) {
-            winston.warn(`Character(${this.character.characterId}) not converted. Reasons: ${this.conversionProblems.join("; ")}`);
-            return Promise.resolve();
+    private async getOldModel (id: string) : Promise<Model | null> {
+        if (this.ignoreInGame)
+        {
+            winston.info(`Ovveride inGame flag for id=${id}`);
+            return null;
         }
+        try {
+            return await this.con.get(id);
+        }
+        catch (err)
+        {
+            winston.info(`Model doesnt exist`, err);
+            return null;
+        }
+    }
 
-        winston.info(`Will export converted Character(${this.model._id})`);
+    public async export(): Promise<boolean> {
+
+        const {model, account } = this;
+
+        winston.info(`Will export converted Character(${model._id})`);
 
         const results: any = {
             clearEvents: null,
@@ -79,9 +67,9 @@ export class AliceExporter<Model extends AliceBaseModel> {
         };
 
         const refreshEvent = {
-            characterId: this.model._id,
+            characterId: model._id,
             eventType: "_RefreshModel",
-            timestamp: this.model.timestamp + 100,
+            timestamp: model.timestamp + 100,
             data: {},
         };
 
@@ -91,83 +79,50 @@ export class AliceExporter<Model extends AliceBaseModel> {
 
         this.eventsToSend.push(refreshEvent);
 
-        let oldModel = Observable
-        .fromPromise(this.con.get(this.model._id))
-        .catch((err) => {
-            winston.info(`Model doesnt exist`, err);
-            return Observable.of(null);
-        });
+        const oldModel = await this.getOldModel(model._id);
+        const thisModel = Observable.of(model);
 
-        if (this.ignoreInGame) {
-            winston.info(`Ovveride inGame flag for id=${this.model._id}`);
-            oldModel = Observable.of(null);
+        if (oldModel && oldModel.inGame)
+        {
+            winston.info(`Character model ${model._id} already in game!`);
+            return false;
         }
 
-        const thisModel = Observable.of(this.model);
+        results.clearEvents = await this.clearEvents(model._id);
 
-        return Observable.zip(thisModel, oldModel, (a, b) => [a, b])
-            // ===== Проверка InGame для для случая обновления ==============================
-            .filter(([, o]: [MagellanModel, MagellanModel | null]) => {
-                if (o && o.inGame) {
-                    winston.info(`Character model ${this.model._id} already in game!`);
-                    return false;
-                }
-                return true;
-            })
+        results.model = (await saveObject(this.con, model, this.isUpdate).toPromise()).ok ? "ok" : "error";
 
-            .map(([thisM,]) => thisM)
+        if (this.eventsToSend.length) {
+            const result =  await this.eventsCon.bulkDocs(this.eventsToSend);
+            results.saveEvents = result.length;
+        }
 
-            .flatMap(() => this.clearEvents())
-            .do((result) => results.clearEvents = result.length)
-
-            .flatMap(() => saveObject(this.con, this.model, this.isUpdate))
-            .do((result) => results.model = result.ok ? "ok" : "error")
-
-            .flatMap(() =>
-                this.eventsToSend.length ? this.eventsCon.bulkDocs(this.eventsToSend) : Observable.from([[]]))
-            .do((result: any) => results.saveEvents = result.length)
-
-            .flatMap(() => {
-                if (this.account) {
-                    winston.debug(`Providing account for character ${this.account._id}`)
-                    return saveObject(this.accCon, this.account, this.isUpdate);
+                if (account) {
+                    winston.info(`Providing account for character ${account._id}`)
+                    results.account = (await saveObject(this.accCon, account, this.isUpdate).toPromise()).ok ? "ok" : "error";
                 } else {
-                    winston.warn(`Cannot provide account for Character(${this.model._id})`);
-                    return Promise.resolve(false);
+                    winston.info(`Skip providing account for Character(${model._id})`);
+                    results.account = "skip";
                 }
-            })
-            .do((result) => results.account = result.ok ? "ok" : "error")
-
-            .map(() => results)
-            .toPromise();
-
+        winston.info(`Exported model and account for character ${model._id}`, results);
     }
 
     /**
      * Очистка очереди события для данного персонажа (если они были)
      */
-    public clearEvents(): Observable<any> {
+    public async clearEvents(id: string): Promise<any> {
         const selector = {
-            selector: { characterId: this.model._id },
+            selector: { characterId: id },
             limit: 10000,
         };
 
-        return Observable.from(this.eventsCon.find(selector))
-            .flatMap((result: any) => {
-                return this.eventsCon.bulkDocs(
+        const result = await this.eventsCon.find(selector);
+        return await this.eventsCon.bulkDocs(
                     result.docs.map((x) => {
                         const x2 = clones(x);
                         x2._deleted = true;
                         return x2;
                     }),
                 );
-            });
-    }
-
-    private createModel() {
-        const result = this.gameFacade.convertAliceModel(this.character);
-        this.model = result.model;
-        this.account = result.account;
-        this.conversionProblems = result.problems;
     }
 }

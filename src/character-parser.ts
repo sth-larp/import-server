@@ -1,4 +1,4 @@
-import { JoinCharacterDetail, JoinMetadata } from "./join-importer";
+import { JoinCharacterInfo, JoinMetadata } from "./join-importer";
 
 export class CharacterParser {
     public characterId: number;
@@ -6,7 +6,7 @@ export class CharacterParser {
     public isActive: boolean;
 
     constructor(
-        public character: JoinCharacterDetail,
+        public character: JoinCharacterInfo,
         public metadata: JoinMetadata,
     ) {
         this.characterId = character.CharacterId;

@@ -6,7 +6,7 @@ import { Professions, TradeUnions, Company } from "../interfaces/model";
 import { AliceBaseModel } from "../interfaces/deus-model";
 import { AliceModelConverter } from "../alice-model-converter";
 
-export class MagellanModelConverter extends AliceModelConverter {
+export class MagellanModelConverter extends AliceModelConverter<MagellanModel> {
     public conversionProblems: string[] = [];
 
     constructor(character: CharacterParser) {

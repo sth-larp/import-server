@@ -4,9 +4,19 @@ import { createEmptyAliceModel } from "../alice-model-converter";
 import { createSystemsFromNucleotides } from "./model-converter";
 
 export class MiceCreator {
-    generate(firstId: number, count: number): Observable<MagellanModel> {
+    public name = "mice";
+    
+    constructor (
+        private num: number,
+    ) {
+
+    }
+
+    public count() {return this.num};
+
+    generate(firstId: number): Observable<MagellanModel> {
         return Observable
-            .range(firstId, count)
+            .range(firstId, this.num)
             .map((index) => {
                 const systems = createSystemsFromNucleotides(new Array(7).fill(0));
 

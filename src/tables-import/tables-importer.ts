@@ -1,64 +1,17 @@
-import { Observable, BehaviorSubject } from 'rxjs/Rx';
-
-import * as moment from "moment";
+import { Observable } from 'rxjs/Rx';
 import * as PouchDB from 'pouchdb';
-import * as request from 'request-promise-native';
 import * as winston from 'winston';
-import * as arrayUnique from 'array-unique';
 import * as google from 'googleapis';
+import * as parse from 'csv-parse/lib/sync';
 
 import { config } from '../config';
-import { DeusModifier } from '../interfaces/modifier';
-import { DeusCondition } from '../interfaces/condition';
-import { Predicate } from '../interfaces/predicate';
 import { saveObject } from '../helpers'
-import { effectNames, conditionTypes, implantClasses, implantCorp, systems, implantSystems } from './constants'
-import { GenEffectData, MindEffectData, ImplantData } from './ImplantData';
-import { IllnessData } from './illnessData'
-import { ConditionData } from './conditionData'
-import { PillData, parsePill } from './pillsData';
-import { FirmwareData, parseFirmware } from './firmwareData';
 
 import * as loaders from './loaders';
 import { System } from "../interfaces/model";
 import { createEmptyAliceModel } from '../alice-model-converter';
 
-let unique = arrayUnique.immutable;
-
-interface TablesData {
-    implantsData: ImplantData[]
-    illnessesData: any[]
-    conditionsData: any[]
-    pillsData: PillData[]
-    firmwareData: FirmwareData[]
-}
-
 export class TablesImporter {
-
-    private implantDB: any = null;
-    private conditionDB: any = null;
-    private pillsDB: any = null;
-    private illnessesDB: any = null;
-
-    tablesData: TablesData = {
-        implantsData: [],
-        illnessesData: [],
-        conditionsData: [],
-        pillsData: [],
-        firmwareData: []
-    };
-
-    //Созданные в результате импорта объекты имплантов, состояний и "модификатор" для показа состояний кубиков сознания
-    implants: DeusModifier[] = [];
-    conditions: DeusCondition[] = [];
-    mindCubeModifier: DeusModifier = {
-        _id: "mindcubes_showdata",
-        displayName: "internal mind cube conditions modifier",
-        class: "_internal",
-        effects: ["show-condition"],
-        predicates: []
-    };
-    illnesses: DeusCondition[] = [];
 
     authorize(): Promise<any> {
         return new Promise((resolve, reject) => {
@@ -66,7 +19,7 @@ export class TablesImporter {
                 if (err) return reject(err);
 
                 if (authClient.createScopedRequired && authClient.createScopedRequired()) {
-                    var scopes = ['https://www.googleapis.com/auth/spreadsheets'];
+                    var scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
                     authClient = authClient.createScoped(scopes);
                 }
 
@@ -115,7 +68,8 @@ export class TablesImporter {
             timeout: 6000 * 1000,
         };
 
-        const con = new PouchDB(`${config.url}${config.workModelDBName}`, {});
+        // const con = new PouchDB(`${config.url}${config.workModelDBName}`, ajaxOpts);
+        const con = new PouchDB(`work-models`);
 
         const data = await loaders.xenomorphsDataLoad(authClient);
         data.values.forEach(async (line, rowIndex: number) => {
@@ -124,7 +78,7 @@ export class TablesImporter {
             if (planet.length == 0)
                 return;
 
-            //winston.info(`Processing planet ${planet}`);
+            winston.info(`Processing planet ${planet}`);
             for (let i = 0; i < this.systemsPresence.length; ++i) {
                 const nucleotideString = line[1 + 8 * i];
                 if (nucleotideString == '-')
@@ -184,14 +138,11 @@ export class TablesImporter {
     }
 }
 
-
 let importer = new TablesImporter();
 
 importer.import().subscribe((result) => {
-    winston.info(`Import finished. Implants: ${result.tablesData.implantsData.length}, Ilnesses: ${result.tablesData.illnessesData.length}`);
-},
+    winston.info(`Import finished.`)},
     (err) => {
         winston.info('Error in import process: ', err);
     }
 );
-

@@ -61,9 +61,9 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "request-promise-native": "^1.0.4",
-    "rxjs": "^5.4.2",
+    "rxjs": "^5.5.11",
     "tslint": "^5.11.0",
-    "typescript": "^2.4.1",
+    "typescript": "^2.8.4",
     "uuid": "^3.1.0",
     "winston": "^2.3.1",
     "winston-elasticsearch": "^0.5.8"

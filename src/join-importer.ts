@@ -96,11 +96,16 @@ export class JoinImporter {
             json : true,
         };
 
-        return request(reqOpts).then( (result: any) => {
-            winston.info(`Received access token!`);
-            this.accessToken = result.access_token;
-            return true;
-        });
+        return request(reqOpts)
+            .then( (result: any) => {
+                winston.info(`Received access token!`);
+                this.accessToken = result.access_token;
+                return true;
+            })
+            .catch( (err) => {
+                winston.error(`Problem with login to joinrpg`, err);
+                throw err;
+            });
     }
 
     public getCharacterList(modifiedSince: moment.Moment ): Promise<JoinCharacter[]> {
@@ -149,7 +154,12 @@ export class JoinImporter {
             json : true,
         };
 
-         return request(reqOpts).then( (m: JoinMetadata) => {this.metadata = m; return m; });
+         return request(reqOpts)
+            .then( (m: JoinMetadata) => {this.metadata = m; return m; })
+            .catch( (err) => {
+                winston.error(`Failed to get metadata from join`, err);
+                throw err;
+            })
     }
 
 }

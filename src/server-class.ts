@@ -41,7 +41,7 @@ interface  CharacterData<Model extends AliceBaseModel> {
 export class Server<Model extends AliceBaseModel> {
     public isImportRunning:boolean;
 
-    private workData : ModelImportData <Model> = new ModelImportData();
+    private workData : ModelImportData <Model> = new ModelImportData <Model>();
 
     constructor(
         private facade: GameFacade<Model>,
@@ -71,6 +71,7 @@ prepareForImport(data: ModelImportData<Model>): Observable<ModelImportData<Model
  * Получение списка обновленных персонажей (выполняется с уже подготовленной ModelImportData)
  */
 loadCharacterListFomJoin(data: ModelImportData<Model>): Observable<ModelImportData<Model>> {
+    winston.debug(`Will load character list from join`);
     return Observable.fromPromise(
                 data.importer.getCharacterList(data.lastRefreshTime.subtract(5, "minutes"))
                 .then( ( c: JoinCharacter[] ) => {
@@ -179,7 +180,7 @@ private async sendModelRefresh(char: CharacterData<Model>, data: ModelImportData
 /**
  * Получение потока данных персонажей (выполняется с уже подготовленной ModelImportData)
  */
-loadCharactersFromJoin(data: ModelImportData<Model>): Observable<JoinCharacterInfo> {
+private loadCharactersFromJoin(data: ModelImportData<Model>): Observable<JoinCharacterInfo> {
     let bufferCounter = 0;
     winston.info("Load characters from JoinRPG");
 

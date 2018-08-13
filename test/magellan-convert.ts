@@ -33,9 +33,13 @@ describe("Model Creation testchar01", () => {
         expect(model.profileType).is.equal('human');
     });
 
-    it("Systems", () => {
+    it("Systems should be present", () => {
         expect(model.systems).is.not.null;
         expect(model.systems.length).is.equal(7);
+    });
+
+    it("Systems should allow negative nucleotides", () => {
+        expect(model.systems[1].nucleotide).is.equal(-4);
     });
 
     it("Managers should have company bonus", () => {

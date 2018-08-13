@@ -65,15 +65,19 @@ export class TempDbWriter {
 
     }
 
-    getLastStats(): Promise<ImportRunStats>{
-        return this.con.get(this.lastStatsDocID).then((s: any) => {
+    public getLastStats(): Promise<ImportRunStats>{
+        winston.debug(`Will load stats from cache`);
+        return this.con.get(this.lastStatsDocID)
+        .then((s: any) => {
             let ret = new ImportRunStats( moment(s.importTime, "YYYY-MM-DDTHH:mm") );
             ret.created = s.created;
             ret.imported = s.imported;
             ret.updated = s.updated;
+            winston.info(`Import stats: created ${ret.created}, imported ${ret.imported}, updated: ${ret.updated}`);
             return ret;
          })
-        .catch( ()=>{
+        .catch( (err)=>{
+            winston.warn(`Cannot get stats from cache`, err);
              return (new ImportRunStats( moment([1900,0,1]) ));
          })
     }

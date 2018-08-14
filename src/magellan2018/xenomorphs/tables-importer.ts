@@ -8,7 +8,7 @@ import * as fs from "fs";
 import { config } from "../../config";
 import { saveObject } from "../../helpers";
 
-import * as loaders from "./loaders";
+import * as loaders from "../../google-sheet-loaders";
 import { System } from "../../interfaces/model";
 import { createEmptyAliceModel } from "../../alice-model-converter";
 
@@ -17,22 +17,18 @@ import * as rp from "request-promise";
 import stringify = require("csv-stringify/lib/sync");
 import { configureLogger } from "../../logger";
 import { AliceBaseModel } from "../../interfaces/deus-model";
-import { MagellanModel, XenomorphsQrPrintData } from "../models/magellan-models";
+import { MagellanModel, XenomorphsQrPrintData, MagellanPill } from "../models/magellan-models";
+import { printXenomorph, printPill } from "./printer";
+import { encodePayloadForQr } from "../../qr-server";
 
 async function accountIdCode(id: string): Promise<string> {
-    const r = await rp.get(
-        `${config.qrServer.baseUrl}/encode?type=100&kind=1&validUntil=1680601600&payload=${id}`,
-        { json: true });
-    return r.content;
+    return await encodePayloadForQr(100, id);
 }
 
 async function getDiseaseCode(values: number[], power: number): Promise<string> {
     const seq = [...values, power];
     const stringifiedSeq = seq.join(",");
-    const r = await rp.get(
-        `${config.qrServer.baseUrl}/encode?type=9&kind=1&validUntil=1680601600&payload=${stringifiedSeq}`,
-        { json: true });
-    return r.content;
+    return await encodePayloadForQr(9, stringifiedSeq);
 }
 
 function sleeper(ms) {
@@ -43,6 +39,8 @@ export class TablesImporter {
 
     private readonly numberOfSystems = 7;
     private readonly con: PouchDB.Database<any>;
+
+    private loader: loaders.GoogleSheetLoader;
 
     private classNames = [
         "Одноклеточные",
@@ -81,35 +79,18 @@ export class TablesImporter {
         };
 
         this.con = new PouchDB(`${config.url}${config.workModelDBName}`, ajaxOpts);
+
+        this.loader = new loaders.GoogleSheetLoader(config.biology.spreadsheetId);
     }
 
-    public authorize(): Promise<any> {
-        return new Promise((resolve, reject) => {
-            google.auth.getApplicationDefault((err, authClient) => {
-                if (err) { return reject(err); }
-
-                if (authClient.createScopedRequired && authClient.createScopedRequired()) {
-                    const scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
-                    authClient = authClient.createScoped(scopes);
-                }
-
-                resolve(authClient);
-            });
-        });
-    }
-
-    public import(): Observable<TablesImporter> {
+    public importXeno(): Observable<TablesImporter> {
         const promise = async () => {
-            const authClient = await this.authorize();
+            await this.loader.authorize();
             winston.info("Authorization success!");
 
-            const data = await loaders.xenomorphsDataLoad(authClient);
+            const data = await this.loader.loadRange("Xenomorphs!A3:CM2009");
 
-            let rowIndex = 0;
-            for (const line of data.values) {
-                await this.handleLine(line, rowIndex);
-                rowIndex++;
-            }
+            await this.handleXenomorphs(data);
 
             return this;
         };
@@ -117,10 +98,85 @@ export class TablesImporter {
         return Observable.fromPromise(promise());
     }
 
+    public importPill(): Observable<TablesImporter> {
+        const promise = async () => {
+            await this.loader.authorize();
+            winston.info("Authorization success!");
+
+            const pill = await this.loader.loadRange("Farmacia!A2:B");
+
+            await this.handlePills(pill.values);
+
+            return this;
+        };
+
+        return Observable.fromPromise(promise());
+    }
+
+    private async handleXenomorphs(data: any) {
+        let rowIndex = 0;
+        for (const line of data.values) {
+            await this.handleLine(line, rowIndex);
+            rowIndex++;
+        }
+    }
+
+    private async handlePills(data: any) {
+        const pills = [];
+        let rowIndex = 0;
+        for (const line of data) {
+            const pill = await this.handlePillLine(line, rowIndex);
+            rowIndex++;
+
+            if (pill) {
+                pills.push(pill);
+            }
+        }
+
+        winston.info(`Pills: `, pills);
+
+        const printed = `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>Пилюли </title>
+        </head>
+        <body> ${pills.map((pill) => printPill(pill)).join("")}
+        </body>
+        </html>`;
+        fs.writeFileSync(`planets/pills.html`, printed);
+    }
+
+    private async handlePillLine(line: string[], rowIndex: number): Promise<MagellanPill> {
+        const [action, description] = line;
+        const parsedAction = this.getParsedSystems(action);
+
+        if (!parsedAction) {
+            winston.warn(`Pill ${action} in row ${rowIndex + 2} cannot be parsed`);
+            return;
+        }
+
+        const pillQr = await encodePayloadForQr(4, parsedAction.join(","));
+
+        return {title: description, payload: pillQr};
+    }
+
     private splitCell(value: string, planet: string): number[] {
-        const result = value.split(" ").map(Number);
+        const result = this.getParsedSystems(value);
         if (result.length !== this.numberOfSystems) {
-            winston.error(`Incorrect cell value ${value} for planet ${planet} expected 7 numbers: `);
+            winston.error(`Incorrect cell value ${value} for planet ${planet}.`);
+        }
+        return result;
+    }
+
+    private getParsedSystems(value: string): number[] | undefined {
+        if (!value) {
+            return undefined;
+        }
+        const result = value.trim().split(" ").map(Number);
+        if (result.length !== this.numberOfSystems) {
+            return undefined;
         }
         return result;
     }
@@ -208,7 +264,22 @@ export class TablesImporter {
             }
         if (xenomorphsQrData.length) {
                 fs.writeFileSync(`planets/${planet}.csv`, stringify(xenomorphsQrData));
+                this.printPlanet(xenomorphsQrData, planet);
             }
+    }
+
+    private printPlanet(xenomorphsQrData: XenomorphsQrPrintData[], planet: string) {
+        const printed = `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>Планета </title>
+        </head>
+        <body> ${xenomorphsQrData.map((data) => printXenomorph(data)).join("")}
+        </body>
+        </html>`;
+        fs.writeFileSync(`planets/${planet}.html`, printed);
     }
 
     private createAliceModelForXenomorph(
@@ -244,7 +315,7 @@ configureLogger("table-import-logs");
 
 const importer = new TablesImporter();
 
-importer.import().subscribe(
+importer.importPill().subscribe(
     (result) => { winston.info(`Import finished.`); },
     (err) => {
         winston.error("Error in import process: ", err);

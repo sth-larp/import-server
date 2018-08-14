@@ -31,3 +31,8 @@ export interface XenomorphsQrPrintData {
     diseaseCode: string;
     description: string;
 }
+
+export interface MagellanPill {
+    payload: string;
+    title: string;
+}

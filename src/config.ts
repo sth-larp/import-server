@@ -54,4 +54,8 @@ export const config = {
     mailServerAPIUrl: "",
 
     initialNpcId : 10000,
+
+    biology: {
+        spreadsheetId: "1HpNnkNHhJaryi8hBhElwuvB-8ooaoGS7f4IrY-Z0bQY",
+    },
 };

@@ -1,25 +1,13 @@
-import { XenomorphsQrPrintData } from "../models/magellan-models";
-import { QRCode, ErrorCorrectLevel, QRNumber, QRAlphaNum, QR8BitByte, QRKanji } from "qrcode-generator-ts/js";
+import { XenomorphsQrPrintData, MagellanPill } from "../models/magellan-models";
+import { createQrCode } from "../../qr-server";
 
 export function printXenomorph(xeno: XenomorphsQrPrintData) {
     const diseaseQr = createQrCode(xeno.diseaseCode);
     const accountQr = createQrCode(xeno.accountIdCode);
 
-    const qrCodeWithTitle = (code, title) => {
-        if (!code) {return ""; }
-        return `
-<div style="
-    display: flex;justify-content: center;align-items: center;
-    align-content: center;overflow: hidden;flex-direction: column; margin-left: 2em;margin-right:1em">
-    <img src="${code}"">
-        <br>
-    <b style="text-align: center">${title}</b>
-</div>`;
-    };
-
     return `
     <hr>
-<div style="width: 100%;">
+<div style="width: 100%;break-inside:avoid">
     <b>${xeno.className}</b>
     <hr>
     <div style="display:flex; flex-direction:row">
@@ -34,16 +22,28 @@ export function printXenomorph(xeno: XenomorphsQrPrintData) {
 <hr>
 `;
 }
-function createQrCode(str: string) {
-    if (!str)
-    {
-        return str;
-    }
-    const code = new QRCode();
-    code.setErrorCorrectLevel(ErrorCorrectLevel.M);
-    code.setTypeNumber(4);
-    code.addData(str);
-    code.make();
-    const diseaseQr = code.toDataURL();
-    return diseaseQr;
+
+export function printPill(xeno: MagellanPill) {
+    const diseaseQr = createQrCode(xeno.payload);
+
+    return `
+    <hr>
+<div style="width: 100%;break-inside:avoid">
+    <div style="display:flex; flex-direction:row">
+    ${qrCodeWithTitle(diseaseQr, xeno.title)}
+</div>
+<hr>
+`;
+}
+
+function qrCodeWithTitle(code, title) {
+    if (!code) {return ""; }
+    return `
+<div style="
+display: flex;justify-content: center;align-items: center;
+align-content: center;overflow: hidden;flex-direction: column; margin-left: 2em;margin-right:1em">
+<img src="${code}"">
+    <br>
+<b style="text-align: center">${title}</b>
+</div>`;
 }

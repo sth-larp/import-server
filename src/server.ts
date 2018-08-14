@@ -15,7 +15,7 @@ import { Server } from "./server-class";
 import { configureLogger } from "./logger";
 
 // start logging
-configureLogger();
+configureLogger("importserver-logs");
 
 PouchDB.plugin(pouchDBFind);
 

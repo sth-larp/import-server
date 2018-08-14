@@ -37,22 +37,7 @@ export class AliceExporter<Model extends AliceBaseModel> {
         this.eventsCon = new PouchDB(`${config.url}${config.eventsDBName}`, ajaxOpts);
     }
 
-    private async getOldModel (id: string) : Promise<Model | null> {
-        if (this.ignoreInGame)
-        {
-            winston.info(`Ovveride inGame flag for id=${id}`);
-            return null;
-        }
-        try {
-            return await this.con.get(id);
-        }
-        catch (err)
-        {
-            winston.info(`Model doesnt exist`, err);
-            return null;
-        }
-    }
-
+    // tslint:disable-next-line:member-ordering
     public async export(): Promise<boolean> {
 
         const {model, account } = this;
@@ -82,24 +67,23 @@ export class AliceExporter<Model extends AliceBaseModel> {
         const oldModel = await this.getOldModel(model._id);
         const thisModel = Observable.of(model);
 
-        if (oldModel && oldModel.inGame)
-        {
+        if (oldModel && oldModel.inGame) {
             winston.info(`Character model ${model._id} already in game!`);
             return false;
         }
 
         results.clearEvents = await this.clearEvents(model._id);
 
-        results.model = (await saveObject(this.con, model, this.isUpdate).toPromise()).ok ? "ok" : "error";
+        results.model = (await saveObject(this.con, model, this.isUpdate)).ok ? "ok" : "error";
 
         if (this.eventsToSend.length) {
             const result =  await this.eventsCon.bulkDocs(this.eventsToSend);
             results.saveEvents = result.length;
         }
 
-                if (account) {
-                    winston.info(`Providing account for character ${account._id}`)
-                    results.account = (await saveObject(this.accCon, account, this.isUpdate).toPromise()).ok ? "ok" : "error";
+        if (account) {
+                    winston.info(`Providing account for character ${account._id}`);
+                    results.account = (await saveObject(this.accCon, account, this.isUpdate)).ok ? "ok" : "error";
                 } else {
                     winston.info(`Skip providing account for Character(${model._id})`);
                     results.account = "skip";
@@ -124,5 +108,18 @@ export class AliceExporter<Model extends AliceBaseModel> {
                         return x2;
                     }),
                 );
+    }
+
+    private async getOldModel(id: string): Promise<Model | null> {
+        if (this.ignoreInGame) {
+            winston.info(`Ovveride inGame flag for id=${id}`);
+            return null;
+        }
+        try {
+            return await this.con.get(id);
+        } catch (err) {
+            winston.info(`Model doesnt exist`, err);
+            return null;
+        }
     }
 }

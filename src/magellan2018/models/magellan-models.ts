@@ -17,4 +17,8 @@ export interface MiceModel extends MagellanModelBase {
     profileType: "mice";
 }
 
-export type MagellanModel = HumanModel | MiceModel;
+export interface XenomorphModel extends MagellanModelBase {
+    profileType: "xenomorph";
+}
+
+export type MagellanModel = HumanModel | MiceModel | XenomorphModel;

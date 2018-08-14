@@ -13,7 +13,7 @@ import { MagellanGame } from "./magellan2018";
 import { MagellanModel } from "./magellan2018/models/magellan-models";
 import { Server } from "./server-class";
 
-export function configureLogger() {
+export function configureLogger(indexName: string) {
 
     winston.remove("console");
     if (process.env.NODE_ENV !== "production") {
@@ -32,7 +32,7 @@ export function configureLogger() {
             });
 
     winston.add(Elasticsearch,
-        { level: "debug",  indexPrefix: "importserver-logs", clientOpts: { host: config.log.elasticHost } });
+        { level: "debug",  indexPrefix: indexName, clientOpts: { host: config.log.elasticHost } });
 
     winston.add(winston.transports.File, {
         name: "warn-files",

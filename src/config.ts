@@ -30,9 +30,13 @@ export const config = {
     },
 
     econ: {
-        baseUrl: "http://api.alice.magellan2018.ru",
+        baseUrl: "https://api.alice.magellan2018.ru",
         username: process.env.ADMIN_USER,
         password: process.env.ADMIN_PASSWORD,
+    },
+
+    qrServer: {
+        baseUrl: "https://qr.alice.magellan2018.ru",
     },
 
     importInterval: 300000,

@@ -34,5 +34,3 @@ export interface CompanyAccess {
 }
 
 export type Company = "gd" | "pre" | "kkg" | "mat" | "mst";
-
-

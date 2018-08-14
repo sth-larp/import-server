@@ -159,7 +159,7 @@ export class JoinImporter {
             .catch( (err) => {
                 winston.error(`Failed to get metadata from join`, err);
                 throw err;
-            })
+            });
     }
 
 }

@@ -9,7 +9,7 @@ export interface CliParams {
     refresh: boolean;
     econ: boolean;
     id?: number;
-    since?: String;
+    since?: string;
     server: boolean;
     ignoreInGame: boolean;
     provideNpcs: boolean;

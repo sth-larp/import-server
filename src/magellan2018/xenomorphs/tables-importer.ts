@@ -5,19 +5,19 @@ import * as google from "googleapis";
 import * as parse from "csv-parse/lib/sync";
 import * as fs from "fs";
 
-import { config } from "../config";
-import { saveObject } from "../helpers";
+import { config } from "../../config";
+import { saveObject } from "../../helpers";
 
 import * as loaders from "./loaders";
-import { System } from "../interfaces/model";
-import { createEmptyAliceModel } from "../alice-model-converter";
+import { System } from "../../interfaces/model";
+import { createEmptyAliceModel } from "../../alice-model-converter";
 
 import * as rp from "request-promise";
 
 import stringify = require("csv-stringify/lib/sync");
-import { configureLogger } from "../logger";
-import { AliceBaseModel } from "../interfaces/deus-model";
-import { MagellanModel } from "../magellan2018/models/magellan-models";
+import { configureLogger } from "../../logger";
+import { AliceBaseModel } from "../../interfaces/deus-model";
+import { MagellanModel } from "../models/magellan-models";
 
 interface XenomorphsQrPrintData {
     planetCode: string;

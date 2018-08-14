@@ -22,3 +22,12 @@ export interface XenomorphModel extends MagellanModelBase {
 }
 
 export type MagellanModel = HumanModel | MiceModel | XenomorphModel;
+
+export interface XenomorphsQrPrintData {
+    planetCode: string;
+    className: string;
+    speciesIndex: number;
+    accountIdCode: string;
+    diseaseCode: string;
+    description: string;
+}

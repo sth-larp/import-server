@@ -17,16 +17,7 @@ import * as rp from "request-promise";
 import stringify = require("csv-stringify/lib/sync");
 import { configureLogger } from "../../logger";
 import { AliceBaseModel } from "../../interfaces/deus-model";
-import { MagellanModel } from "../models/magellan-models";
-
-interface XenomorphsQrPrintData {
-    planetCode: string;
-    className: string;
-    speciesIndex: number;
-    accountIdCode: string;
-    diseaseCode: string;
-    description: string;
-}
+import { MagellanModel, XenomorphsQrPrintData } from "../models/magellan-models";
 
 async function accountIdCode(id: string): Promise<string> {
     const r = await rp.get(

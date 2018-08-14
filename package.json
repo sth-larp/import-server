@@ -58,6 +58,7 @@
     "pouchdb": "^6.3.2",
     "pouchdb-authentication": "^0.5.5",
     "pouchdb-find": "^6.3.4",
+    "qrcode-generator-ts": "0.0.4",
     "request": "^2.88.0",
     "request-promise": "^4.2.2",
     "request-promise-native": "^1.0.4",

@@ -1,4 +1,5 @@
 import * as google from "googleapis";
+import * as winston from "winston";
 const sheets = google.sheets("v4");
 
 export class GoogleSheetLoader {
@@ -8,8 +9,16 @@ export class GoogleSheetLoader {
     ) {}
 
     public async loadRange(range: string): Promise<any> {
-        const request = this.defaultParams({ auth: this.authClient, range });
-        return getValues(request);
+        try {
+            const request = this.defaultParams({ auth: this.authClient, range });
+            winston.debug(`About to query Google docs`);
+            const result = await getValues(request);
+            winston.debug(`Loaded ${result.values.length} rows from Google`);
+            return result;
+        } catch (err) {
+            winston.error(`Error loading data from Google sheet`, err);
+            throw err;
+        }
     }
 
     public authorize(): Promise<any> {

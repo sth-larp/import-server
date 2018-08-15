@@ -1,4 +1,3 @@
-import { Observable } from "rxjs/Rx";
 import * as winston from "winston";
 import * as fs from "fs";
 
@@ -10,10 +9,11 @@ import { System } from "../../interfaces/model";
 import { createEmptyAliceModel } from "../../alice-model-converter";
 
 import stringify = require("csv-stringify/lib/sync");
-import { configureLogger } from "../../logger";
+// import load = require("csv-parse/lib/sync");
 import { MagellanModel, XenomorphsQrPrintData } from "../models/magellan-models";
 import { printXenomorph } from "./printer";
 import { encodePayloadForQr } from "../../qr-server";
+import { delay } from "bluebird";
 
 async function accountIdCode(id: string): Promise<string> {
     return await encodePayloadForQr(100, id);
@@ -64,24 +64,21 @@ export class XenoImporter {
         this.loader = new loaders.GoogleSheetLoader(config.biology.spreadsheetId);
     }
 
-    public importXeno(): Observable<XenoImporter> {
-        const promise = async () => {
-            await this.loader.authorize();
-            winston.info("Authorization success!");
+    public async importXeno(): Promise<void> {
+        winston.debug(`Start import`);
 
-            const data = await this.loader.loadRange("Xenomorphs!A3:CM2009");
+        // const x = load(fs.readFileSync("C:\\Users\\Leo\\Downloads\\xeno.csv").toString());
+        await this.loader.authorize();
+        winston.info("Authorization success!");
 
-            await this.handleXenomorphs(data);
+        const data = await this.loader.loadRange("Xenomorphs!A458:CM2009");
 
-            return this;
-        };
-
-        return Observable.fromPromise(promise());
+        await this.handleXenomorphs(data.values);
     }
 
-    private async handleXenomorphs(data: any) {
+    private async handleXenomorphs(data: string[][]) {
         let rowIndex = 0;
-        for (const line of data.values) {
+        for (const line of data) {
             await this.handleLine(line, rowIndex);
             rowIndex++;
         }
@@ -115,7 +112,7 @@ export class XenoImporter {
         }
     }
 
-    private async handleLine(line: string[], rowIndex: number): Promise<any> {
+    private async handleLine(line: string[], rowIndex: number): Promise<void> {
         const planet = line[0].replace("SN: ", "");
         if (planet.length === 0) {
                 return;
@@ -153,6 +150,8 @@ export class XenoImporter {
             const diseaseValues = diseaseValuesString === "-" ?
                 [0, 0, 0, 0, 0, 0, 0] : this.splitCell(diseaseValuesString, planet);
 
+            winston.debug(`Will get disease code for ${diseaseValues}, ${diseasePowerString}`)
+
             const diseaseCode = await getDiseaseCode(diseaseValues, diseasePower);
             winston.debug(`
                     Nucleotides: ${nucleotideString},
@@ -176,11 +175,11 @@ export class XenoImporter {
 
                     xenomorphsQrData.push(xenomorph);
 
-                    winston.debug(`xenomorph`, xenomorph);
+                    winston.debug(`xenomorph`, xenomorph); 
 
+                    await delay(300);
                     const model = this.createAliceModelForXenomorph(systemsMask, systemsValues, nucleotide, id);
                     try {
-                        // await sleeper(1000);
                         await saveObject(this.con, model, true);
                     } catch (e) {
                         winston.error(e);
@@ -235,15 +234,3 @@ export class XenoImporter {
         };
     }
 }
-
-configureLogger("table-import-logs");
-
-const importer = new XenoImporter();
-
-importer.importXeno().subscribe(
-    () => { winston.info(`Import finished.`); },
-    (err) => {
-        winston.error("Error in import process: ", err);
-    },
-    () => { process.exit(0); },
-);

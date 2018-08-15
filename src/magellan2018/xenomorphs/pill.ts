@@ -6,7 +6,6 @@ import { config } from "../../config";
 
 import * as loaders from "../../google-sheet-loaders";
 
-import { configureLogger } from "../../logger";
 import { MagellanPill } from "../models/magellan-models";
 import { printPill } from "./printer";
 import { encodePayloadForQr } from "../../qr-server";
@@ -94,15 +93,3 @@ export class PillImporter {
     }
 
 }
-
-configureLogger("table-import-logs");
-
-const importer = new PillImporter();
-
-importer.importPill().subscribe(
-    () => { winston.info(`Import finished.`); },
-    (err) => {
-        winston.error("Error in import process: ", err);
-    },
-    () => { process.exit(0); },
-);

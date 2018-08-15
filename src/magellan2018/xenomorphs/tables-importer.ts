@@ -1,14 +1,14 @@
 import * as winston from "winston";
 
 import { configureLogger } from "../../logger";
-import { SpaceSuitImporter } from "./spacesuits";
+import { XenoImporter } from "./xeno";
 
 configureLogger("table-import-logs");
 
-const importer = new SpaceSuitImporter();
+const importer = new XenoImporter();
 
 winston.info(`Started importer`);
 
-importer.importSuits()
+importer.importXeno()
     .then(() => winston.info(`Import finished.`))
     .catch((err) => winston.error("Error in import process: ", err));

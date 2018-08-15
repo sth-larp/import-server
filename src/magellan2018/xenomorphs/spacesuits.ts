@@ -1,7 +1,7 @@
 import * as winston from "winston";
 import * as fs from "fs";
 
-import { connectToCouch, saveObject } from "../../helpers";
+import { connectToCouch } from "../../helpers";
 
 import { encodePayloadForQr } from "../../qr-server";
 import { printSuit } from "./printer";
@@ -14,7 +14,7 @@ async function encodeSpaceSuit(id: string): Promise<string> {
 }
 
 const suitStartId = 1;
-const count = 10;
+const count = 200;
 
 export class SpaceSuitImporter {
 
@@ -47,9 +47,7 @@ export class SpaceSuitImporter {
         </html>`;
         fs.writeFileSync(`planets/suits.html`, printed);
 
-        for (const suit of suits) {
-            await saveObject(this.con, {_id: suit.id});
+        await this.con.bulkDocs(suits.map( (suit) => ({_id: suit.id})));
         }
 
     }
-}

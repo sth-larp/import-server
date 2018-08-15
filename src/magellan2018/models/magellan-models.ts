@@ -41,3 +41,13 @@ export interface SpaceSuit {
     payload: string;
     id: string;
 }
+
+export interface Reactive {
+    power: number;
+    id: string;
+}
+
+export interface SimpleQr {
+    payload: string;
+    title: string;
+}

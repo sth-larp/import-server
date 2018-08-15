@@ -1,5 +1,28 @@
 import * as winston from "winston";
 import * as clones from "clones";
+import { config, CouchDbNames } from "./config";
+
+import * as PouchDB from "pouchdb";
+
+export function connectToCouch(dbName: CouchDbNames): PouchDB.Database<any> {
+    const ajaxOpts = {
+        auth: {
+            username: config.username,
+            password: config.password,
+        },
+
+        timeout: 6000 * 1000,
+    };
+
+    winston.debug(`About to connect to ${dbName} at ${config.url}`);
+
+    try {
+        return new PouchDB(`${config.url}${dbName}`, ajaxOpts);
+    } catch (err) {
+        winston.error(`Connect to ${dbName} at ${config.url} failed`, err);
+        throw err;
+    }
+}
 
 /**
  * Сохранить в БД (connection) переданный объект (doc)

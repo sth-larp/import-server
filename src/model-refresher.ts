@@ -1,26 +1,16 @@
-import * as PouchDB from 'pouchdb';
-
-import { config } from './config';
 import { AliceBaseModel } from './interfaces/deus-model';
+import { connectToCouch } from './helpers';
 
 
 export class ModelRefresher{
     private eventsCon:any = null;
 
     constructor() {
-
-        const ajaxOpts = {
-                auth:{
-                    username: config.username,
-                    password: config.password
-                }
-        };
-
-        this.eventsCon = new PouchDB(`${config.url}${config.eventsDBName}`, ajaxOpts);        
+        this.eventsCon = connectToCouch("events");
 
     }
 
-    //Послать _Refresh событие для экспортрованной модели, что бы сформировалась Work/ViewModel
+    // Послать _Refresh событие для экспортрованной модели, что бы сформировалась Work/ViewModel
     sentRefreshEvent(model: AliceBaseModel): Promise<any>{
         let timestamp = Date.now();
 

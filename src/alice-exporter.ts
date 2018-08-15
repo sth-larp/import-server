@@ -1,11 +1,8 @@
-import * as PouchDB from "pouchdb";
 import * as winston from "winston";
 import * as clones from "clones";
 
-import { config } from "./config";
-
 import { DeusEvent } from "./interfaces/events";
-import { saveObject } from "./helpers";
+import { saveObject, connectToCouch } from "./helpers";
 import { AliceBaseModel } from "./interfaces/deus-model";
 import { AliceAccount } from "./interfaces/alice-account";
 
@@ -21,19 +18,9 @@ export class AliceExporter<Model extends AliceBaseModel> {
                 private account: AliceAccount,
                 public isUpdate: boolean = true,
                 public ignoreInGame: boolean = false) {
-
-        const ajaxOpts = {
-            auth: {
-                username: config.username,
-                password: config.password,
-            },
-
-            timeout: 6000 * 1000,
-        };
-
-        this.con = new PouchDB(`${config.url}${config.modelDBName}`, ajaxOpts);
-        this.accCon = new PouchDB(`${config.url}${config.accountDBName}`, ajaxOpts);
-        this.eventsCon = new PouchDB(`${config.url}${config.eventsDBName}`, ajaxOpts);
+        this.con = connectToCouch("models");
+        this.accCon = connectToCouch("accounts");
+        this.eventsCon = connectToCouch("events");
     }
 
     // tslint:disable-next-line:member-ordering

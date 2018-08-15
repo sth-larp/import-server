@@ -36,3 +36,8 @@ export interface MagellanPill {
     payload: string;
     title: string;
 }
+
+export interface SpaceSuit {
+    payload: string;
+    id: string;
+}

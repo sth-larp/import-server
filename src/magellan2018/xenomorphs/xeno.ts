@@ -1,10 +1,9 @@
 import { Observable } from "rxjs/Rx";
-import * as PouchDB from "pouchdb";
 import * as winston from "winston";
 import * as fs from "fs";
 
 import { config } from "../../config";
-import { saveObject } from "../../helpers";
+import { saveObject, connectToCouch } from "../../helpers";
 
 import * as loaders from "../../google-sheet-loaders";
 import { System } from "../../interfaces/model";
@@ -60,16 +59,7 @@ export class XenoImporter {
     ];
 
     constructor() {
-        const ajaxOpts = {
-            auth: {
-                username: config.username,
-                password: config.password,
-            },
-
-            timeout: 6000 * 1000,
-        };
-
-        this.con = new PouchDB(`${config.url}${config.workModelDBName}`, ajaxOpts);
+        this.con = connectToCouch("work-models");
 
         this.loader = new loaders.GoogleSheetLoader(config.biology.spreadsheetId);
     }

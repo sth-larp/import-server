@@ -1,11 +1,10 @@
 import * as moment from "moment";
-import * as PouchDB from "pouchdb";
 import * as winston from "winston";
 
 
-import { config } from "./config";
 import { JoinCharacterInfo,  JoinMetadata, JoinImporter, JoinCharacter } from "./join-importer"
 import { ImportRunStats } from "./import-run-stats";
+import { connectToCouch } from "./helpers";
 
 export class TempDbWriter {
 
@@ -14,14 +13,7 @@ export class TempDbWriter {
     private exceptionIds = ["JoinMetadata", "lastImportStats"];
 
     constructor() {
-        const ajaxOpts = {
-                auth: {
-                    username: config.username,
-                    password: config.password,
-                }
-        };
-
-        this.con = new PouchDB(`${config.url}${config.tempDbName}`, ajaxOpts);
+        this.con = connectToCouch("join-import");
     }
     
     setFieldsNames(c: JoinCharacterInfo, metadata: JoinMetadata): JoinCharacterInfo{

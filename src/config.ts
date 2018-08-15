@@ -4,17 +4,14 @@ if (process.env.NODE_ENV !== "production") {
     dotenv.load();
 }
 
+export type CouchDbNames = "obj-counters" | "work-models" | "join-import" | "models" | "accounts" | "events";
+
 export const config = {
     port: process.env.PORT || 8100,
 
     url: "https://couchdb.alice.magellan2018.ru/",
     username: process.env.COUCHDB_USER,
     password: process.env.COUCHDB_PASSWORD,
-    tempDbName: "join-import",
-    modelDBName: "models",
-    workModelDBName: "work-models",
-    accountDBName: "accounts",
-    eventsDBName: "events",
 
     importDelay: 200,
     importOnlyInGame: false,

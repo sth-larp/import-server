@@ -61,8 +61,12 @@ async function main() {
 
         Observable.timer(0, config.importInterval).
             flatMap(() => Observable.fromPromise(server.importAndCreate()))
-            .subscribe(() => { },
+            .subscribe(
                 () => {
+                    winston.info("Run once.");
+                },
+                (err) => {
+                    winston.error("Crashed: " + err);
                     process.exit(1);
                 },
                 () => {
@@ -73,4 +77,6 @@ async function main() {
     }
 }
 
-main();
+main()
+    .then(() => winston.info("Main then"))
+    .catch(() => winston.info("Main catch"));

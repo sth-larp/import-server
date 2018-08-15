@@ -138,7 +138,7 @@ export class JoinImporter {
         return request(reqOpts);
     }
 
-    public getCharacterByID(id: string): Promise<JoinCharacterInfo> {
+    public getCharacterByID(id: number): Promise<JoinCharacterInfo> {
         const url = `${config.joinrpg.charactersPath}/${id}/`;
         return this.getCharacter(url);
     }

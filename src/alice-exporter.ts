@@ -89,6 +89,8 @@ export class AliceExporter<Model extends AliceBaseModel> {
                     results.account = "skip";
                 }
         winston.info(`Exported model and account for character ${model._id}`, results);
+
+        return true;
     }
 
     /**
@@ -112,7 +114,7 @@ export class AliceExporter<Model extends AliceBaseModel> {
 
     private async getOldModel(id: string): Promise<Model | null> {
         if (this.ignoreInGame) {
-            winston.info(`Ovveride inGame flag for id=${id}`);
+            winston.info(`Override inGame flag for id=${id}`);
             return null;
         }
         try {

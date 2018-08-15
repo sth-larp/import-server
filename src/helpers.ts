@@ -2,6 +2,7 @@ import { Observable } from "rxjs";
 import * as PouchDB from "pouchdb";
 import * as winston from "winston";
 import * as clones from "clones";
+import { exists } from "fs";
 
 /**
  * Сохранить в БД (connection) переданный объект (doc)
@@ -9,13 +10,20 @@ import * as clones from "clones";
  * если задан update == true, то этот документ обновляется
  *
  */
-export async function saveObject( connection: any, doc: any, update: boolean = true ): Promise<any> {
+
+export interface SaveResult {
+     ok: boolean;
+     exist: boolean;
+}
+
+export async function saveObject( connection: any, doc: any, update: boolean = true ): Promise<SaveResult> {
 
     doc = clones(doc);
 
     // Если в объекте не установлен _id => то его можно просто сохранять, проставится автоматически
     if (!doc._id) {
         await connection.post(doc);
+        return {ok: true, exist: false};
     }
 
     let oldDoc;
@@ -25,6 +33,7 @@ export async function saveObject( connection: any, doc: any, update: boolean = t
     } catch (err) {
         if (err.status && err.status === 404) {
             await  connection.put(doc);
+            return {ok: true, exist: false};
         } else {
             winston.warn(`catch object: `, err, doc);
         }
@@ -34,7 +43,8 @@ export async function saveObject( connection: any, doc: any, update: boolean = t
     if (update) {
             doc._rev = oldDoc._rev;
             await connection.put(doc);
+            return {ok: true, exist: true };
         } else {
-            return { status: "exist", oldDoc };
+            return {ok: false, exist: true };
         }
 }

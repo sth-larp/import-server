@@ -46,23 +46,18 @@ export class TempDbWriter {
 
     public lastStatsDocID = "lastImportStats";
 
-    saveLastStats(s: ImportRunStats): Promise<any>{
+    public async saveLastStats(s: ImportRunStats): Promise<void> {
 
-        let stats: any = {
+        const stats: any = {
             _id: this.lastStatsDocID,
             importTime: s.importTime.format("YYYY-MM-DDTHH:mm"),
             imported: s.imported,
             created: s.created,
-            updated: s.updated
+            updated: s.updated,
         };
-
-        return this.con.get(this.lastStatsDocID)
-                        .then( (oldc: JoinCharacterInfo) =>{ 
-                            stats._rev = oldc._rev;
-                            return this.con.put(stats);
-                        })
-                        .catch( () => this.con.put(stats) );
-
+        const oldc = await this.con.get(this.lastStatsDocID);
+        stats._rev = oldc._rev;
+        await this.con.put(stats);
     }
 
     public getLastStats(): Promise<ImportRunStats>{

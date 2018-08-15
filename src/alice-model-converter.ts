@@ -30,7 +30,7 @@ export abstract class AliceModelConverter<Model extends AliceBaseModel> {
 
     }
 
-    public convert() : ConversionResults<Model> {
+    public convert(): ConversionResults<Model> {
         try {
             const result = this.convertModelImpl();
             return {
@@ -41,15 +41,16 @@ export abstract class AliceModelConverter<Model extends AliceBaseModel> {
             this.conversionProblems.push("Error in converting model " + e);
         }
 
-        if (this.conversionProblems.length > 0)
-        {
+        if (this.conversionProblems.length > 0) {
             return {model: undefined, account: undefined, problems:  this.conversionProblems};
         }
     }
 
-    private convertModelImpl () {
-        if (!this.character.isActive)
-        {
+    protected abstract convertSpecifics(base: AliceBaseModel);
+    protected abstract getNameFieldId(): number;
+
+    private convertModelImpl() {
+        if (!this.character.isActive) {
             this.conversionProblems.push("Not active character");
             return;
         }
@@ -62,8 +63,6 @@ export abstract class AliceModelConverter<Model extends AliceBaseModel> {
         return {model, account};
     }
 
-    protected abstract convertSpecifics(base: AliceBaseModel); 
-
     private createBaseModel(): AliceBaseModel {
         return {
             ...createEmptyAliceModel(),
@@ -75,8 +74,6 @@ export abstract class AliceModelConverter<Model extends AliceBaseModel> {
         };
     }
 
-    protected abstract getNameFieldId(): number;
-
     private getLogin() {
         // Защита от цифрового логина
         const login =  this.character.joinStrFieldValue(3631) || ("user" + this.character.characterId);
@@ -85,16 +82,16 @@ export abstract class AliceModelConverter<Model extends AliceBaseModel> {
             this.conversionProblems.push(`Incorrect login ${login}`);
         }
 
-        return login;
+        return login.toLowerCase();
     }
 
     private getFullName(fullNameFieldNumber: number) {
         const name = this.character.joinStrFieldValue(fullNameFieldNumber);
         const parts = this.parseFullName(name);
-        return { 
-            firstName: parts.firstName, 
-            nicName: parts.nicName, 
-            lastName: parts.lastName 
+        return {
+            firstName: parts.firstName,
+            nicName: parts.nicName,
+            lastName: parts.lastName,
         };
     }
 

@@ -150,6 +150,11 @@ export class TablesImporter {
 
     private async handlePillLine(line: string[], rowIndex: number): Promise<MagellanPill> {
         const [action, description] = line;
+
+        if (!action) {
+            return;
+        }
+
         const parsedAction = this.getParsedSystems(action);
 
         if (!parsedAction) {

@@ -36,7 +36,7 @@ export const config = {
         baseUrl: "https://qr.alice.magellan2018.ru",
     },
 
-    importInterval: 300000,
+    importInterval: 30000,
     importBurstSize: 10,
     requestTimeout: 120000,
     importBurstDelay: 1000,

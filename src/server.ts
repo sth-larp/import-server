@@ -1,5 +1,4 @@
 import * as express from "express";
-import { Observable } from "rxjs";
 import * as moment from "moment";
 import * as winston from "winston";
 import * as PouchDB from "pouchdb";
@@ -59,21 +58,13 @@ async function main() {
 
         app.get("/", (_, res) => res.send(stats.toString()));
 
-        Observable.timer(0, config.importInterval).
-            flatMap(() => Observable.fromPromise(server.importAndCreate()))
-            .subscribe(
-                () => {
-                    winston.info("Run once.");
-                },
-                (err) => {
-                    winston.error("Crashed: " + err);
-                    process.exit(1);
-                },
-                () => {
-                    winston.info("Finished!");
-                    process.exit(0);
-                },
-        );
+        setInterval(async () => {
+            try {
+                await server.importAndCreate();
+            } catch (e) {
+                winston.error(e);
+            }
+        }, config.importInterval);
     }
 }
 

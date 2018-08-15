@@ -245,44 +245,44 @@ public async importAndCreate(
     }
 
     this.isImportRunning = true;
+    try {
+        this.workData = await this.prepareForImport(this.workData);
 
-    this.workData = await this.prepareForImport(this.workData);
+        // Установить дату с которой загружать персонажей (если задано)
+        if (updatedSince) {
+            this.workData.lastRefreshTime = updatedSince;
+            winston.info("Using update since time: " + this.workData.lastRefreshTime.format("DD-MM-YYYY HH:mm:SS"));
+        }
 
-    // Установить дату с которой загружать персонажей (если задано)
-    if (updatedSince) {
-        this.workData.lastRefreshTime = updatedSince;
-        winston.info("Using update since time: " + this.workData.lastRefreshTime.format("DD-MM-YYYY HH:mm:SS"));
+        // Загрузить список персонажей (Join или кэш), если не задан ID
+        if (id) {
+                        this.workData.charList.push( JoinImporter.createJoinCharacter(id) );
+                    } else if (importJoin || true) {
+                        this.workData.charList
+                            = await this.workData.importer.getCharacterList(
+                                this.workData.lastRefreshTime.subtract(5, "minutes"));
+                    } else {
+                        // return this.loadCharacterListFromCache(data);
+                    }
+
+        // Запись в лог
+        winston.info(`Received character list: ${this.workData.charList.length} characters`);
+
+        if (onlyList) { // Если это только запрос списка - закончить
+            return;
+        }
+
+        for (const char of this.workData.charList) {
+            await this.performCharacterImport(char.CharacterId, exportModel, refreshModel);
+        }
+        if (!id) {
+            await this.workData.cacheWriter.saveLastStats( new ImportRunStats(moment.utc()) );
+        }
+        winston.info(`Import sequence completed. Imported ${this.workData.importCouter} models!`);
+    } catch (err) {
+        winston.error(err);
+    } finally {
+        this.isImportRunning = false;
     }
-
-    // Загрузить список персонажей (Join или кэш), если не задан ID
-    if (id) {
-                    this.workData.charList.push( JoinImporter.createJoinCharacter(id) );
-                } else if (importJoin || true) {
-                    this.workData.charList
-                        = await this.workData.importer.getCharacterList(
-                            this.workData.lastRefreshTime.subtract(5, "minutes"));
-                } else {
-                    // return this.loadCharacterListFromCache(data);
-                }
-
-    // Запись в лог
-    winston.info(`Received character list: ${this.workData.charList.length} characters`);
-
-    if (onlyList) { // Если это только запрос списка - закончить
-        return;
-    }
-
-    for (const char of this.workData.charList) {
-        await this.performCharacterImport(char.CharacterId, exportModel, refreshModel);
-    }
-
-    this.isImportRunning = false;
-
-    if (!id) {
-        await this.workData.cacheWriter.saveLastStats( new ImportRunStats(moment.utc()) );
-    }
-
-    winston.info(`Import sequence completed. Imported ${this.workData.importCouter} models!`);
-
 }
 }

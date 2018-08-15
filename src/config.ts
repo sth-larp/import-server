@@ -14,7 +14,7 @@ export const config = {
     password: process.env.COUCHDB_PASSWORD,
 
     importDelay: 200,
-    importOnlyInGame: false,
+    importOnlyInGame: true,
 
     joinrpg: {
         login: process.env.JOINRPG_USER,

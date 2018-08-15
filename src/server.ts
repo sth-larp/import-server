@@ -60,7 +60,7 @@ if (
     app.get("/", (_, res) => res.send(stats.toString()));
 
     Observable.timer(0, config.importInterval).
-        flatMap( () => server.importAndCreate() )
+        flatMap( () => Observable.fromPromise(server.importAndCreate() ))
         .subscribe( () => {},
             () => {
                 process.exit(1);

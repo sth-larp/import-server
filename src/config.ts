@@ -45,7 +45,8 @@ export const config = {
         logFileName: "import-server.log",
         warnFileName: "import-server.warn.log",
         supportLogFileName: "import-support-server.log",
-        elasticHost: "https://elasticsearch.alice.magellan2018.ru/",
+        elasticHost: "",
+        // elasticHost: "https://elasticsearch.alice.magellan2018.ru/",
     },
 
     mailServerAPIUrl: "",

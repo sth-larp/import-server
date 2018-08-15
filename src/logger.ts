@@ -25,8 +25,10 @@ export function configureLogger(indexName: string) {
     //             level: "debug",
     //         });
 
-    winston.add(Elasticsearch,
-        { level: "debug",  indexPrefix: indexName, clientOpts: { host: config.log.elasticHost } });
+    if (config.log.elasticHost) {
+        winston.add(Elasticsearch,
+            { level: "debug",  indexPrefix: indexName, clientOpts: { host: config.log.elasticHost } });
+        }
 
     winston.add(winston.transports.File, {
         name: "warn-files",

@@ -67,11 +67,10 @@ export class XenoImporter {
     public async importXeno(): Promise<void> {
         winston.debug(`Start import`);
 
-        // const x = load(fs.readFileSync("C:\\Users\\Leo\\Downloads\\xeno.csv").toString());
         await this.loader.authorize();
         winston.info("Authorization success!");
 
-        const data = await this.loader.loadRange("Xenomorphs!A458:CM2009");
+        const data = await this.loader.loadRange("Xenomorphs!A3:CM2009");
 
         await this.handleXenomorphs(data.values);
     }

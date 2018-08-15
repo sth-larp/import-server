@@ -18,7 +18,7 @@ export function createEmptyAliceModel() {
         modifiers: [],
         timers: [],
         _rev: undefined,
-        timestamp: Date.now(),
+        timestamp: 0,
     };
 }
 

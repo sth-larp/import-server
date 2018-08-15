@@ -150,7 +150,7 @@ export class XenoImporter {
             const diseaseValues = diseaseValuesString === "-" ?
                 [0, 0, 0, 0, 0, 0, 0] : this.splitCell(diseaseValuesString, planet);
 
-            winston.debug(`Will get disease code for ${diseaseValues}, ${diseasePowerString}`)
+            winston.debug(`Will get disease code for ${diseaseValues}, ${diseasePowerString}`);
 
             const diseaseCode = await getDiseaseCode(diseaseValues, diseasePower);
             winston.debug(`
@@ -175,7 +175,7 @@ export class XenoImporter {
 
                     xenomorphsQrData.push(xenomorph);
 
-                    winston.debug(`xenomorph`, xenomorph); 
+                    winston.debug(`xenomorph`, xenomorph);
 
                     await delay(300);
                     const model = this.createAliceModelForXenomorph(systemsMask, systemsValues, nucleotide, id);

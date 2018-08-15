@@ -5,7 +5,6 @@ import { TempDbWriter } from "./tempdb-writer";
 import { ModelRefresher } from "./model-refresher";
 import { ImportRunStats } from "./import-run-stats";
 import * as moment from "moment";
-import { Observable, BehaviorSubject } from "rxjs";
 import * as winston from "winston";
 import { Provider } from "./providers/interface";
 import { AliceExporter } from "./alice-exporter";
@@ -14,6 +13,7 @@ import { CharacterParser } from "./character-parser";
 import { ConversionResults } from "./alice-model-converter";
 import { AliceAccount } from "./interfaces/alice-account";
 import { CliParams } from "./cli-params";
+import { Npc } from "./interfaces/npc-creator";
 
 class ModelImportData <Model extends AliceBaseModel> {
     public importer: JoinImporter = new JoinImporter();
@@ -53,62 +53,57 @@ private assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
 }
 
-// tslint:disable-next-line:member-ordering
-public createNpcs(): Observable<string> {
+private async createOneNpc(model): Promise<boolean> {
+    winston.info(`About to save NPC ${model.model._id}`);
+    const exporter = new AliceExporter(model.model, model.account, true, this.params.ignoreInGame);
+    const res = await exporter.export();
 
-    const providers = this.facade.getNpcProviders();
-
-    if (!this.params.provideNpcs) {
-        // tslint:disable-next-line:max-line-length
-        winston.info (`Configured NPC providers ${providers.map((p) => p.name).join(", ")} but skipped due to cmd line params`);
-        return Observable.of("skip");
+    if (!res) {
+        return false;
     }
 
-    const returnSubject = new BehaviorSubject("start");
+    await this.sendModelRefresh(model, true);
 
-    let npcId = config.initialNpcId;
+    winston.info(`Finished with NPC(${model.model._id})`);
 
-    const streams: Array<Observable<Model>> = [];
+    return true;
+}
 
-    providers
-        .forEach((provider) => {
-            const lastId = npcId + provider.count() - 1;
+// tslint:disable-next-line:member-ordering
+public async createNpcs(): Promise<string> {
+    try {
 
-            winston.info(`Will create NPC of type ${(provider.name)} in id range ${npcId}...${lastId}`);
+        const providers = this.facade.getNpcProviders();
 
-            streams.push(provider.generate(npcId));
-            npcId = lastId + 1;
-        });
+        if (!this.params.provideNpcs) {
+            // tslint:disable-next-line:max-line-length
+            winston.info (`Configured NPC providers ${providers.map((p) => p.name).join(", ")} but skipped due to cmd line params`);
+            return "skip";
+        }
 
-    Observable.merge(streams)
-    .concatAll()
+        let npcId = config.initialNpcId;
 
-    // Экспортировать модель в БД (если надо)
-    .flatMap( (c) => Observable.from([c]).delay(1000), 1 )
-    .flatMap( (model)  => {
-        winston.info(`About to save NPC ${model._id}`);
-        const exporter = new AliceExporter(model, null, true, this.params.ignoreInGame);
-        return Observable.from(exporter.export()).map(() => {
-            return { character: null, model, account: null };
-        });
-    })
+        const streams: Array<Npc<Model>> = [];
 
-    // Послать модели Refresh соообщение для создания Work и View-моделей
-    .flatMap( (c) => Observable.fromPromise(this.sendModelRefresh(c, this.workData, true)).map(() => Observable.of(c)) )
+        providers
+            .forEach((provider) => {
+                const lastId = npcId + provider.count() - 1;
 
-    // Собрать из всех обработанных данных всех персонажей общий массив и передать дальше как один элемент
-    .toArray()
-    .subscribe( () => {},
-    (error) => {
-    winston.error( "Error in pipe: ", error );
-    },
-    () => {
+                winston.info(`Will create NPC of type ${(provider.name)} in id range ${npcId}...${lastId}`);
 
-    returnSubject.complete();
-    },
-    );
+                const npcs = provider.generate(npcId);
+                npcs.forEach((npc) => streams.push(npc));
+                npcId = lastId + 1;
+            });
 
-    return returnSubject;
+        for (const npc of streams) {
+            await this.createOneNpc(npc);
+        }
+    } catch (error) {
+        winston.error( "Error in pipe: ", error );
+    }
+
+    return "complete";
 }
 /**
  * Предвартельные операции для импорта (токен, заливка метаданных, каталоги и т.д)
@@ -177,13 +172,12 @@ private async exportCharacterToAlice(
  */
 private async sendModelRefresh(
     char: CharacterData<Model>,
-    data: ModelImportData<Model>,
     refreshModel: boolean): Promise<void> {
     if (!refreshModel) {
         return;
     }
 
-    await data.modelRefresher.sentRefreshEvent(char.model);
+    await this.workData.modelRefresher.sentRefreshEvent(char.model);
     winston.info( `Refresh event sent to model for character id = ${char.model._id}: `);
 }
 
@@ -193,6 +187,7 @@ public async performCharacterImport(
     exportModel: boolean = true,
     refreshModel: boolean = false,
 ) {
+    winston.debug(`About to import character(${id}`);
     const character = await this.workData.importer.getCharacterByID(id);
     if (config.importOnlyInGame && !character.InGame) {
         winston.info(`Character id=${character._id} have no flag "InGame", and not imported`);
@@ -217,7 +212,7 @@ public async performCharacterImport(
             provider, chData, exportModel);
     }));
 
-    await this.sendModelRefresh(chData, this.workData, refreshModel);
+    await this.sendModelRefresh(chData, refreshModel);
 
     this.workData.importCouter++;
 }

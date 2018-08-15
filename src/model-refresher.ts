@@ -1,9 +1,9 @@
-import { AliceBaseModel } from './interfaces/deus-model';
-import { connectToCouch } from './helpers';
+import { AliceBaseModel } from "./interfaces/deus-model";
+import { connectToCouch } from "./helpers";
+import * as winston from "winston";
 
-
-export class ModelRefresher{
-    private eventsCon:any = null;
+export class ModelRefresher {
+    private eventsCon: any = null;
 
     constructor() {
         this.eventsCon = connectToCouch("events");
@@ -11,20 +11,24 @@ export class ModelRefresher{
     }
 
     // Послать _Refresh событие для экспортрованной модели, что бы сформировалась Work/ViewModel
-    sentRefreshEvent(model: AliceBaseModel): Promise<any>{
-        let timestamp = Date.now();
+    public async sentRefreshEvent(model: AliceBaseModel): Promise<void> {
+        winston.debug(`Sending event for ${model._id}`);
+        let timestamp;
+        // if (model && model.timestamp) {
+            // timestamp = model.timestamp + 1000;
+        // } else {
+        timestamp = Date.now() + 1000;
+        // }
 
-        if(model && model.timestamp){
-            timestamp = model.timestamp + 1000;
-        }
-
-        let event =   {
+        const event = {
                 characterId: model._id,
                 timestamp,
                 eventType: "_RefreshModel",
-                data: ""
+                data: "",
             };
 
-        return this.eventsCon.post(event);
+        await this.eventsCon.post(event);
+
+        winston.debug(`Sent event for ${model._id}`);
     }
 }

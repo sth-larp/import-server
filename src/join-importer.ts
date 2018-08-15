@@ -3,7 +3,6 @@ import * as request from "request-promise-native";
 import * as winston from "winston";
 
 import { config } from "./config";
-import { AliceBaseModel } from "./interfaces/deus-model";
 
 export interface JoinCharacter {
     CharacterId: number;
@@ -62,7 +61,7 @@ export interface JoinMetadata {
     _rev?: string;
 }
 
-export interface JoinDataInfo<Model extends AliceBaseModel> {
+export interface JoinDataInfo {
     characters: JoinCharacterInfo[];
     metadata: JoinMetadata;
 }

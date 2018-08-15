@@ -2,7 +2,6 @@ import * as express from "express";
 import { Observable  } from "rxjs";
 import * as moment from "moment";
 import * as winston from "winston";
-import Elasticsearch = require("winston-elasticsearch");
 import * as PouchDB from "pouchdb";
 import * as pouchDBFind from "pouchdb-find";
 
@@ -34,7 +33,7 @@ const server = new Server<MagellanModel>(new MagellanGame(), params);
 
 if (params.provideNpcs) {
     server.createNpcs()
-    .subscribe( (data: string) => { },
+    .subscribe( () => { },
     (error: any) => {
         winston.error(`Error`, error);
         process.exit(1);
@@ -73,12 +72,12 @@ if (
     const app = express();
     app.listen(config.port);
 
-    app.get("/", (req, res) => res.send(stats.toString()));
+    app.get("/", (_, res) => res.send(stats.toString()));
 
     Observable.timer(0, config.importInterval).
         flatMap( () => server.importAndCreate() )
         .subscribe( () => {},
-            (error: any) => {
+            () => {
                 process.exit(1);
             },
             () => {

@@ -1,17 +1,7 @@
-import * as express from "express";
-import { Observable  } from "rxjs";
-import * as moment from "moment";
 import * as winston from "winston";
 import Elasticsearch = require("winston-elasticsearch");
-import * as PouchDB from "pouchdb";
-import * as pouchDBFind from "pouchdb-find";
 
-import { ImportStats} from "./stats";
 import { config } from "./config";
-import { processCliParams } from "./cli-params";
-import { MagellanGame } from "./magellan2018";
-import { MagellanModel } from "./magellan2018/models/magellan-models";
-import { Server } from "./server-class";
 
 export function configureLogger(indexName: string) {
 

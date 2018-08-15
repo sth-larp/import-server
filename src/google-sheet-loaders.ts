@@ -39,18 +39,6 @@ export class GoogleSheetLoader {
         return { ...defParams, ...mergeParams };
     }
 
-    private  testDataSave(auth): Promise<any> {
-    const request = this.defaultParams({
-        auth, range: "Test!A3:C5", valueInputOption: "RAW", resource: {
-            values: [
-                [1, 5, 3],
-                [2, 7, 54],
-                [254, 767, 454],
-            ],
-        },
-    });
-    return setValues(request);
-}
 }
 
 // tslint:disable-next-line:ban-types
@@ -71,4 +59,3 @@ function promisify<T>(fn: Function): (...params: any[]) => Promise<T> {
 }
 
 const getValues = promisify<any>(sheets.spreadsheets.values.get);
-const setValues = promisify<any>(sheets.spreadsheets.values.update);

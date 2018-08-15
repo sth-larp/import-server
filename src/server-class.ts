@@ -3,7 +3,6 @@ import { GameFacade } from "./interfaces/game";
 import { JoinImporter, JoinCharacter, JoinCharacterInfo } from "./join-importer";
 import { TempDbWriter } from "./tempdb-writer";
 import { ModelRefresher } from "./model-refresher";
-import { MailProvision } from "./mail-provision";
 import { ImportRunStats } from "./import-run-stats";
 import * as moment from "moment";
 import { Observable, BehaviorSubject } from "rxjs";
@@ -15,13 +14,11 @@ import { CharacterParser } from "./character-parser";
 import { ConversionResults } from "./alice-model-converter";
 import { AliceAccount } from "./interfaces/alice-account";
 import { CliParams } from "./cli-params";
-import { isNullOrUndefined } from "util";
 
 class ModelImportData <Model extends AliceBaseModel> {
     public importer: JoinImporter = new JoinImporter();
     public cacheWriter: TempDbWriter = new TempDbWriter();
     public modelRefresher: ModelRefresher = new ModelRefresher();
-    public mailProvision: MailProvision = new MailProvision();
 
     public currentStats = new ImportRunStats();
 
@@ -52,57 +49,8 @@ export class Server<Model extends AliceBaseModel> {
 
     }
 
-/**
- * Получение списка персонажей в кеше (выполняется с уже подготовленной ModelImportData)
- */
-private loadCharacterListFromCache(data: ModelImportData<Model>): Observable<ModelImportData<Model>> {
-    return Observable.fromPromise(
-                data.cacheWriter.getCacheCharactersList()
-                .then( ( c: JoinCharacter[] ) => {
-                            winston.info("Debug: " + JSON.stringify(c));
-                            data.charList = c;
-                            return data;
-                 }),
-            );
-}
-
-/**
- * Сохранение данных о персонаже из Join в кеш на CouchDB
- */
-private saveCharacterToCache(char: JoinCharacterInfo, data: ModelImportData<Model>): Observable<JoinCharacterInfo> {
-    return Observable.fromPromise( data.cacheWriter.saveCharacter(char) )
-            .do( (c: any) => winston.info(`Character id: ${c.id} saved to cache`) )
-            .map( () => char);
-}
-
 private assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
-}
-
-/**
- * Получение потока данных персонажей из кэша (выполняется с уже подготовленной ModelImportData)
- */
-private loadCharactersFromCache(data: ModelImportData<Model>): Observable<JoinCharacterInfo> {
-    let bufferCounter = 0;
-    winston.info("Load characters from CouchDB cache");
-
-    return Observable.from(data.charList)
-            .bufferCount(config.importBurstSize)        // Порезать на группы по 20
-             // Полученные данные группы разбить на отдельные элементы для обработки
-            .mergeMap( (cl: JoinCharacter[]) => {
-                const characterIds = cl.map((d) => d.CharacterId);
-                winston.info(`# Process ${bufferCounter}, size=${config.importBurstSize}: ${characterIds.join(",")} #`);
-                bufferCounter++;
-
-                const promiseArr: Array<Promise<JoinCharacterInfo>> = [];
-                cl.forEach( (c) => promiseArr.push(data.cacheWriter.getCacheCharacter(c.CharacterId.toString())) );
-
-                return Promise.all(promiseArr);
-            }, 1)
-            .retry(3)
-            // Полученные данные группы разбить на отдельные элементы для обработки
-            .mergeMap( (cl: JoinCharacterInfo[]) => Observable.from(cl) )
-            .do( (c: JoinCharacterInfo) => winston.info(`Imported character: ${c.CharacterId}`) );  // Написать в лог
 }
 
 // tslint:disable-next-line:member-ordering
@@ -140,8 +88,8 @@ public createNpcs(): Observable<string> {
     .flatMap( (model)  => {
         winston.info(`About to save NPC ${model._id}`);
         const exporter = new AliceExporter(model, null, true, this.params.ignoreInGame);
-        return Observable.from(exporter.export()).map((res) => {
-            return {character: null, model, account: null};
+        return Observable.from(exporter.export()).map(() => {
+            return { character: null, model, account: null };
         });
     })
 
@@ -213,11 +161,8 @@ private async performProvide(
  * Создание модели персонажа по данным из Join и экспорт в Model-базу
  */
 private async exportCharacterToAlice(
-    char: JoinCharacterInfo,
     converted: ConversionResults<Model>,
     exportModel: boolean): Promise<boolean>  {
-
-    const result = {character: char, model: converted.model, account: converted.account};
 
     if (!converted.model || !exportModel) {
         return false;
@@ -242,42 +187,9 @@ private async sendModelRefresh(
     winston.info( `Refresh event sent to model for character id = ${char.model._id}: `);
 }
 
-/**
- * Получение потока данных персонажей (выполняется с уже подготовленной ModelImportData)
- */
-private loadCharactersFromJoin(data: ModelImportData<Model>): Observable<JoinCharacterInfo> {
-    let bufferCounter = 0;
-    winston.info("Load characters from JoinRPG");
-
-    return Observable.from(data.charList)
-            .bufferCount(config.importBurstSize)        // Порезать на группы по 20
-
-            // Добавить задержку между обработкой записей
-            .flatMap((c) => Observable.from([c]).delay(config.importBurstDelay), 1 )
-
-            // Каждую группу преобразовать в один общий Promise, ждущий все запросы в группе
-            .mergeMap( (cl: JoinCharacter[]) => {
-                const characterIds = cl.map((d) => d.CharacterId);
-                winston.info(`# Process ${bufferCounter}, size=${config.importBurstSize}: ${characterIds.join(",")} #`);
-                bufferCounter++;
-
-                const promiseArr: Array<Promise<JoinCharacterInfo>> = [];
-                cl.forEach((c) => promiseArr.push(data.importer.getCharacter(c.CharacterLink)) );
-
-                return Promise.all(promiseArr);
-            }, 1)
-            .retry(3)
-
-             // Полученные данные группы разбить на отдельные элементы для обработки
-            .mergeMap( (cl: JoinCharacterInfo[]) => Observable.from(cl) )
-
-            .do( (c: JoinCharacterInfo) => winston.info(`Imported character: ${c.CharacterId}`) );  // Написать в лог
-}
-
 // tslint:disable-next-line:member-ordering
 public async performCharacterImport(
     id: number,
-    importJoin: boolean = true,
     exportModel: boolean = true,
     refreshModel: boolean = false,
 ) {
@@ -294,7 +206,7 @@ public async performCharacterImport(
         return false;
     }
 
-    if (!this.exportCharacterToAlice(character, converted, exportModel)) {
+    if (!(await this.exportCharacterToAlice(converted, exportModel))) {
         return false;
     }
 
@@ -339,8 +251,6 @@ public async importAndCreate(
 
     this.isImportRunning = true;
 
-    const returnSubject = new BehaviorSubject("start");
-
     this.workData = await this.prepareForImport(this.workData);
 
     // Установить дату с которой загружать персонажей (если задано)
@@ -368,7 +278,7 @@ public async importAndCreate(
     }
 
     for (const char of this.workData.charList) {
-        await this.performCharacterImport(char.CharacterId, importJoin, exportModel, refreshModel);
+        await this.performCharacterImport(char.CharacterId, exportModel, refreshModel);
     }
 
     this.isImportRunning = false;

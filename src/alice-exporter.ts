@@ -1,4 +1,3 @@
-import { Observable } from "rxjs";
 import * as PouchDB from "pouchdb";
 import * as winston from "winston";
 import * as clones from "clones";
@@ -65,7 +64,6 @@ export class AliceExporter<Model extends AliceBaseModel> {
         this.eventsToSend.push(refreshEvent);
 
         const oldModel = await this.getOldModel(model._id);
-        const thisModel = Observable.of(model);
 
         if (oldModel && oldModel.inGame) {
             winston.info(`Character model ${model._id} already in game!`);

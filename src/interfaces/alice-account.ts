@@ -11,7 +11,7 @@ export interface AliceAccount {
     jobs: {
         tradeUnion: TradeUnions;
         companyBonus: Company[];
-    }
+    };
 
     access?: AccessEntry[];
     pushToken?: string;

@@ -1,8 +1,5 @@
-import { Observable } from "rxjs";
-import * as PouchDB from "pouchdb";
 import * as winston from "winston";
 import * as clones from "clones";
-import { exists } from "fs";
 
 /**
  * Сохранить в БД (connection) переданный объект (doc)

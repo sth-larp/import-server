@@ -13,8 +13,8 @@ async function encodeSpaceSuit(id: string): Promise<string> {
     return await encodePayloadForQr(7, `${id},${spaceSuitDuration}`);
 }
 
-const suitStartId = 300;
-const count = 400;
+const suitStartId = 500;
+const count = suitStartId + 7 * 5 * 15;
 
 export class SpaceSuitImporter {
 

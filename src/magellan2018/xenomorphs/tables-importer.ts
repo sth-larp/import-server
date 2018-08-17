@@ -1,11 +1,11 @@
 import * as winston from "winston";
 
 import { configureLogger } from "../../logger";
-import { PillImporter } from "./pill";
+import { SpaceSuitImporter } from "./spacesuits";
 
 configureLogger("table-import-logs");
 
-const importer = new PillImporter();
+const importer = new SpaceSuitImporter();
 
 winston.info(`Started importer`);
 

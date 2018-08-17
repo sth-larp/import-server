@@ -1,5 +1,5 @@
 import * as winston from "winston";
-import * as clones from "clones";
+// import * as clones from "clones";
 
 import { DeusEvent } from "./interfaces/events";
 import { saveObject, connectToCouch } from "./helpers";
@@ -82,19 +82,23 @@ export class AliceExporter<Model extends AliceBaseModel> {
      * Очистка очереди события для данного персонажа (если они были)
      */
     public async clearEvents(id: string): Promise<any> {
-        const selector = {
-            selector: { characterId: id },
-            limit: 10000,
-        };
+        // const selector = {
+        //     selector: { characterId: id },
+        //     limit: 10000,
+        // };
 
-        const result = await this.eventsCon.find(selector);
-        return await this.eventsCon.bulkDocs(
-                    result.docs.map((x) => {
-                        const x2 = clones(x);
-                        x2._deleted = true;
-                        return x2;
-                    }),
-                );
+        winston.debug(`Will clear events for Character(${id}`);
+
+        return;
+
+        // const result = await this.eventsCon.find(selector);
+        // return await this.eventsCon.bulkDocs(
+        //             result.docs.map((x) => {
+        //                 const x2 = clones(x);
+        //                 x2._deleted = true;
+        //                 return x2;
+        //             }),
+        //         );
     }
 
     private async getOldModel(id: string): Promise<Model | null> {

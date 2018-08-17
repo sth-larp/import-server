@@ -6,6 +6,15 @@ import { Professions, TradeUnions, Company } from "../interfaces/model";
 import { AliceBaseModel } from "../interfaces/deus-model";
 import { AliceModelConverter } from "../alice-model-converter";
 
+export function getSpaceSuit() {
+    return {
+        on: false,
+        oxygenCapacity: 0,
+        timestampWhenPutOn: 0,
+        diseases: [],
+    };
+}
+
 export class MagellanModelConverter extends AliceModelConverter<MagellanModel> {
     public conversionProblems: string[] = [];
 
@@ -20,7 +29,7 @@ export class MagellanModelConverter extends AliceModelConverter<MagellanModel> {
     protected convertSpecifics(base: AliceBaseModel)  {
         const model: HumanModel = {
             ...base,
-            spaceSuit: this.getSpaceSuit(),
+            spaceSuit: getSpaceSuit(),
             ...this.getPlanetAndGenome(2787),
             profileType: "human",
             isTopManager: this.getCompanyAccess().some((company) => company.isTopManager),
@@ -40,13 +49,12 @@ export class MagellanModelConverter extends AliceModelConverter<MagellanModel> {
     }
 
     private getCompanies() {
-        const companies : Company[] = [];
+        const companies: Company[] = [];
 
         const checkAccess  = (g, companyName) => {
-            if (this.character.partOfGroup(g))
-            {
+            if (this.character.partOfGroup(g)) {
                 companies.push(companyName);
-            }    
+            }
         }
 
         checkAccess(8492, "gd");
@@ -61,7 +69,7 @@ export class MagellanModelConverter extends AliceModelConverter<MagellanModel> {
 
     private getCompanyAccess() {
         return this.getCompanies().map(
-            company => {
+            (company) => {
                 return {companyName: company, isTopManager: this.character.partOfGroup(9906)};
             }
         )
@@ -71,10 +79,9 @@ export class MagellanModelConverter extends AliceModelConverter<MagellanModel> {
         // Локация
         if (!this.character.joinStrFieldValue(planetFieldId)) {
             this.conversionProblems.push(`Missing required field homeworld (${planetFieldId})`);
-        }
-        else {
+        } else {
             const planet = this.character.joinStrFieldValue(planetFieldId);
-            const nucleotides = 
+            const nucleotides =
             this.character.joinFieldProgrammaticValue(planetFieldId)
             .split(" ", 7)
             .map((sp) => Number.parseInt(sp, 10));
@@ -83,15 +90,6 @@ export class MagellanModelConverter extends AliceModelConverter<MagellanModel> {
 
         return {planet, systems};
         }
-    }
-
-    private getSpaceSuit() {
-        return {
-            on: false,
-            oxygenCapacity: 0,
-            timestampWhenPutOn: 0,
-            diseases: [],
-        };
     }
 
     private getTradeUnionMembership(): TradeUnions {

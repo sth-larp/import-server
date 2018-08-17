@@ -1,6 +1,6 @@
 import { MagellanModel, MiceModel } from "./models/magellan-models";
 import { createEmptyAliceModel } from "../alice-model-converter";
-import { createSystemsFromNucleotides } from "./model-converter";
+import { createSystemsFromNucleotides, getSpaceSuit } from "./model-converter";
 import { Npc } from "../interfaces/npc-creator";
 import { AliceAccount } from "../interfaces/alice-account";
 
@@ -27,6 +27,7 @@ function createMice(index: number) {
     const systems = createSystemsFromNucleotides(new Array(7).fill(0));
     const mice: MiceModel = {
         ...createEmptyAliceModel(),
+        spaceSuit: getSpaceSuit(),
         _id: index.toString(),
         login: "mice" + index,
         profileType: "mice",

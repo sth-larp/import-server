@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { connectToCouch } from "../../helpers";
 
 import { encodePayloadForQr } from "../../qr-server";
-import { printSuit } from "./printer";
+import { printQr } from "./printer";
 import { SpaceSuit } from "../models/magellan-models";
 
 const spaceSuitDuration = 35;
@@ -13,8 +13,8 @@ async function encodeSpaceSuit(id: string): Promise<string> {
     return await encodePayloadForQr(7, `${id},${spaceSuitDuration}`);
 }
 
-const suitStartId = 1;
-const count = 200;
+const suitStartId = 300;
+const count = 400;
 
 export class SpaceSuitImporter {
 
@@ -24,13 +24,13 @@ export class SpaceSuitImporter {
         this.con = connectToCouch("obj-counters");
     }
 
-    public async importSuits(): Promise<void> {
+    public async import(): Promise<void> {
 
         const suits: SpaceSuit[] = [];
         for (let i = suitStartId; i < count; i++) {
             const id = `ss${i}`;
             const suitQrCode = await encodeSpaceSuit(id);
-            suits.push({payload: suitQrCode, id});
+            suits.push({payload: suitQrCode, id, title: "Скафандр"});
         }
 
         winston.info(`Suits: `, suits);
@@ -42,7 +42,7 @@ export class SpaceSuitImporter {
             <meta http-equiv="X-UA-Compatible" content="IE=edge">
             <title>Скафандры </title>
         </head>
-        <body> ${suits.map((suit) => printSuit(suit)).join("")}
+        <body> ${suits.map((suit) => printQr(suit)).join("")}
         </body>
         </html>`;
         fs.writeFileSync(`planets/suits.html`, printed);

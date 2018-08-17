@@ -1,4 +1,3 @@
-import { Observable } from "rxjs/Rx";
 import * as winston from "winston";
 import * as fs from "fs";
 
@@ -7,7 +6,7 @@ import { config } from "../../config";
 import * as loaders from "../../google-sheet-loaders";
 
 import { MagellanPill } from "../models/magellan-models";
-import { printPill } from "./printer";
+import { printQr } from "./printer";
 import { encodePayloadForQr } from "../../qr-server";
 
 export class PillImporter {
@@ -20,19 +19,14 @@ export class PillImporter {
         this.loader = new loaders.GoogleSheetLoader(config.biology.spreadsheetId);
     }
 
-    public importPill() {
-        const promise = async () => {
-            await this.loader.authorize();
-            winston.info("Authorization success!");
+    public async import() {
+        await this.loader.authorize();
+        winston.info("Authorization success!");
 
-            const pill = await this.loader.loadRange("Farmacia!A2:B");
+        const pill = await this.loader.loadRange("Farmacia!A84:B88");
 
-            await this.handlePills(pill.values);
+        await this.handlePills(pill.values);
 
-            return this;
-        };
-
-        return Observable.fromPromise(promise());
     }
 
     private async handlePills(data: any) {
@@ -56,10 +50,10 @@ export class PillImporter {
             <meta http-equiv="X-UA-Compatible" content="IE=edge">
             <title>Пилюли </title>
         </head>
-        <body> ${pills.map((pill) => printPill(pill)).join("")}
+        <body> ${pills.map((pill) => printQr(pill)).join("")}
         </body>
         </html>`;
-        fs.writeFileSync(`planets/pills.html`, printed);
+        fs.writeFileSync(`planets/forboard_death.html`, printed);
     }
 
     private async handlePillLine(line: string[], rowIndex: number): Promise<MagellanPill> {

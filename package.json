@@ -15,6 +15,7 @@
     "reimport": "tsc && node ./dist/server.js -- --import",
     "debug": "tsc && node --inspect-brk=127.0.0.1:9229 ./dist/server.js -- --mail --id=10643",
     "magellan:xeno": "ts-node src/magellan2018/xenomorphs/tables-importer.ts",
+    "magellan:mice": "tsc && node ./dist/server.js --provideNpcs --ignoreInGame --refresh",
     "import:test": "tsc && node ./dist/server.js -- --test",
     "import:db": "ts-node src/db-docs-creator.ts",
     "processor": "ts-node src/processors/index.ts"

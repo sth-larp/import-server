@@ -14,6 +14,7 @@ import { ConversionResults } from "./alice-model-converter";
 import { AliceAccount } from "./interfaces/alice-account";
 import { CliParams } from "./cli-params";
 import { Npc } from "./interfaces/npc-creator";
+import { delay } from "bluebird";
 
 class ModelImportData<Model extends AliceBaseModel> {
     public importer: JoinImporter = new JoinImporter();
@@ -97,6 +98,7 @@ export class Server<Model extends AliceBaseModel> {
                 });
 
             for (const npc of streams) {
+                await delay(3000);
                 await this.createOneNpc(npc);
             }
         } catch (error) {
@@ -194,7 +196,8 @@ export class Server<Model extends AliceBaseModel> {
             return false;
         }
 
-        const converted = this.facade.convertAliceModel(new CharacterParser(character, this.workData.importer.metadata));
+        const converted =
+            this.facade.convertAliceModel(new CharacterParser(character, this.workData.importer.metadata));
 
         if (!converted.model) {
             winston.warn(`Character(${character._id}) not converted. Reasons: ${converted.problems.join("; ")}`);

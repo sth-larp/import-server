@@ -70,4 +70,4 @@ async function main() {
 
 main()
     .then(() => winston.info("Main then"))
-    .catch(() => winston.info("Main catch"));
+    .catch((err) => winston.info("Main catch", err));

@@ -19,6 +19,6 @@ export class MagellanGame  {
     }
 
     public getNpcProviders(): Array<NpcCreator<MagellanModel>> {
-        return [new MiceCreator(1)];
+        return [new MiceCreator(100)];
     }
 }

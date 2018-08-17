@@ -1,4 +1,4 @@
-import { XenomorphsQrPrintData, MagellanPill, SpaceSuit, Reactive, SimpleQr } from "../models/magellan-models";
+import { XenomorphsQrPrintData, SimpleQr } from "../models/magellan-models";
 import { createQrCode } from "../../qr-server";
 
 export function printXenomorph(xeno: XenomorphsQrPrintData) {
@@ -20,42 +20,6 @@ export function printXenomorph(xeno: XenomorphsQrPrintData) {
     </div>
 </div>
 <hr>
-`;
-}
-
-export function printPill(xeno: MagellanPill) {
-    const diseaseQr = createQrCode(xeno.payload);
-
-    return `
-    <hr>
-<div style="width: 100%;break-inside:avoid">
-    <div style="display:flex; flex-direction:row">
-    ${qrCodeWithTitle(diseaseQr, xeno.title)}
-</div>
-<hr>
-`;
-}
-
-export function printSuit(suit: SpaceSuit) {
-    const qr = createQrCode(suit.payload);
-
-    return `
-    <hr>
-<div style="width: 100%;break-inside:avoid">
-    <div style="display:flex; flex-direction:row">
-    ${qrCodeWithTitle(qr, "скафандр")}
-</div>
-<hr>
-`;
-}
-
-export function printReactive(suit: Reactive) {
-    const qr = createQrCode(suit.id);
-
-    return `
-<div style="float:left">
-    ${qrCodeWithTitle(qr, "Реактивы " + suit.power)}
-</div>
 `;
 }
 

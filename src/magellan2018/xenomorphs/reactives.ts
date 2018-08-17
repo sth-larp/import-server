@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { connectToCouch } from "../../helpers";
 
 import { encodePayloadForQr } from "../../qr-server";
-import { printReactive } from "./printer";
+import { printQr } from "./printer";
 import { Reactive } from "../models/magellan-models";
 
 const reactives = [
@@ -28,12 +28,12 @@ export class ReactiveImporter {
 
         const suits: Reactive[] = [];
 
-        let num = 0;
+        let num = 10000;
         for (const r of reactives) {
             for (let i = 0; i < r.count; i++) {
                 const id = `labrefill${num}`;
                 const suitQrCode = await encodeReactiv(id, r.power);
-                suits.push({power: r.power, id: suitQrCode});
+                suits.push({power: r.power, payload: suitQrCode, id, title: `Реактивы ${r.power}`});
                 num++;
             }
         }
@@ -47,10 +47,10 @@ export class ReactiveImporter {
             <meta http-equiv="X-UA-Compatible" content="IE=edge">
             <title>Скафандры </title>
         </head>
-        <body> ${suits.map((suit) => printReactive(suit)).join("")}
+        <body> ${suits.map((suit) => printQr(suit)).join("")}
         </body>
         </html>`;
-        fs.writeFileSync(`planets/reactive.html`, printed);
+        fs.writeFileSync(`planets/reactive2.html`, printed);
 
         await this.con.bulkDocs(suits.map( (suit) => ({_id: suit.id})));
         }

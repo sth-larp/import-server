@@ -15,6 +15,7 @@ export interface HumanModel extends MagellanModelBase {
 
 export interface MiceModel extends MagellanModelBase {
     profileType: "mice";
+    spaceSuit: SpaceSuit;
 }
 
 export interface XenomorphModel extends MagellanModelBase {
@@ -32,17 +33,13 @@ export interface XenomorphsQrPrintData {
     description: string;
 }
 
-export interface MagellanPill {
-    payload: string;
-    title: string;
-}
+export type MagellanPill = SimpleQr;
 
-export interface SpaceSuit {
-    payload: string;
+export interface SpaceSuit extends SimpleQr {
     id: string;
 }
 
-export interface Reactive {
+export interface Reactive extends SimpleQr {
     power: number;
     id: string;
 }
